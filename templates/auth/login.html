@@ -1,0 +1,163 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Connexion - SaaS Platform{% endblock %}
+
+{% block content %}
+<div class="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-md w-full space-y-8">
+        <div>
+            <div class="mx-auto h-12 w-12 flex items-center justify-center rounded-full bg-blue-100">
+                <i class="fas fa-user-lock text-blue-600 text-xl"></i>
+            </div>
+            <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
+                Connexion à votre compte
+            </h2>
+            <p class="mt-2 text-center text-sm text-gray-600">
+                Ou
+                <a href="{% url 'auth:register' %}" class="font-medium text-blue-600 hover:text-blue-500">
+                    créez un nouveau compte
+                </a>
+            </p>
+        </div>
+        
+        <form class="mt-8 space-y-6" method="post">
+            {% csrf_token %}
+            <input type="hidden" name="remember" value="true">
+            
+            {% if form.errors %}
+                <div class="rounded-md bg-red-50 p-4">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-exclamation-circle text-red-400"></i>
+                        </div>
+                        <div class="ml-3">
+                            <h3 class="text-sm font-medium text-red-800">
+                                Erreur de connexion
+                            </h3>
+                            <div class="mt-2 text-sm text-red-700">
+                                <ul class="list-disc pl-5 space-y-1">
+                                    {% for field, errors in form.errors.items %}
+                                        {% for error in errors %}
+                                            <li>{{ error }}</li>
+                                        {% endfor %}
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+            
+            <div class="rounded-md shadow-sm -space-y-px">
+                <div>
+                    <label for="{{ form.username.id_for_label }}" class="sr-only">Email</label>
+                    <input id="{{ form.username.id_for_label }}" 
+                           name="{{ form.username.name }}" 
+                           type="email" 
+                           autocomplete="email" 
+                           required 
+                           class="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm" 
+                           placeholder="Adresse email"
+                           value="{{ form.username.value|default:'' }}">
+                </div>
+                <div>
+                    <label for="{{ form.password.id_for_label }}" class="sr-only">Mot de passe</label>
+                    <input id="{{ form.password.id_for_label }}" 
+                           name="{{ form.password.name }}" 
+                           type="password" 
+                           autocomplete="current-password" 
+                           required 
+                           class="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm" 
+                           placeholder="Mot de passe">
+                </div>
+            </div>
+
+            <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                    <input id="remember-me" name="remember-me" type="checkbox" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                    <label for="remember-me" class="ml-2 block text-sm text-gray-900">
+                        Se souvenir de moi
+                    </label>
+                </div>
+
+                <div class="text-sm">
+                    <a href="#" class="font-medium text-blue-600 hover:text-blue-500">
+                        Mot de passe oublié ?
+                    </a>
+                </div>
+            </div>
+
+            <div>
+                <button type="submit" class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-150 ease-in-out">
+                    <span class="absolute left-0 inset-y-0 flex items-center pl-3">
+                        <i class="fas fa-sign-in-alt text-blue-500 group-hover:text-blue-400"></i>
+                    </span>
+                    Se connecter
+                </button>
+            </div>
+            
+            {% if next %}
+                <input type="hidden" name="next" value="{{ next }}">
+            {% endif %}
+        </form>
+        
+        <!-- Comptes de test -->
+        <div class="mt-8 border-t border-gray-200 pt-6">
+            <div class="text-center">
+                <h3 class="text-lg font-medium text-gray-900 mb-4">Comptes de test</h3>
+                <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <div class="bg-blue-50 p-3 rounded-lg">
+                        <h4 class="font-medium text-blue-900">Admin</h4>
+                        <p class="text-sm text-blue-700">admin@test.com</p>
+                        <p class="text-sm text-blue-700">123456</p>
+                    </div>
+                    <div class="bg-green-50 p-3 rounded-lg">
+                        <h4 class="font-medium text-green-900">Utilisateur</h4>
+                        <p class="text-sm text-green-700">user@test.com</p>
+                        <p class="text-sm text-green-700">123456</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Auto-focus sur le premier champ
+    document.addEventListener('DOMContentLoaded', function() {
+        const emailField = document.querySelector('input[type="email"]');
+        if (emailField) {
+            emailField.focus();
+        }
+    });
+    
+    // Fonction pour remplir automatiquement les champs de test
+    function fillTestAccount(email, password) {
+        document.querySelector('input[type="email"]').value = email;
+        document.querySelector('input[type="password"]').value = password;
+    }
+    
+    // Ajouter des boutons de remplissage rapide
+    document.addEventListener('DOMContentLoaded', function() {
+        const adminCard = document.querySelector('.bg-blue-50');
+        const userCard = document.querySelector('.bg-green-50');
+        
+        if (adminCard) {
+            adminCard.style.cursor = 'pointer';
+            adminCard.addEventListener('click', function() {
+                fillTestAccount('admin@test.com', '123456');
+            });
+        }
+        
+        if (userCard) {
+            userCard.style.cursor = 'pointer';
+            userCard.addEventListener('click', function() {
+                fillTestAccount('user@test.com', '123456');
+            });
+        }
+    });
+</script>
+{% endblock %}

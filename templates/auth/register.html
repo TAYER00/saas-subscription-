@@ -1,0 +1,197 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Inscription - SaaS Platform{% endblock %}
+
+{% block content %}
+<div class="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-md w-full space-y-8">
+        <div>
+            <div class="mx-auto h-12 w-12 flex items-center justify-center rounded-full bg-green-100">
+                <i class="fas fa-user-plus text-green-600 text-xl"></i>
+            </div>
+            <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
+                Créer votre compte
+            </h2>
+            <p class="mt-2 text-center text-sm text-gray-600">
+                Ou
+                <a href="{% url 'auth:login' %}" class="font-medium text-blue-600 hover:text-blue-500">
+                    connectez-vous à votre compte existant
+                </a>
+            </p>
+        </div>
+        
+        <form class="mt-8 space-y-6" method="post">
+            {% csrf_token %}
+            
+            {% if form.errors %}
+                <div class="rounded-md bg-red-50 p-4">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-exclamation-circle text-red-400"></i>
+                        </div>
+                        <div class="ml-3">
+                            <h3 class="text-sm font-medium text-red-800">
+                                Erreur lors de l'inscription
+                            </h3>
+                            <div class="mt-2 text-sm text-red-700">
+                                <ul class="list-disc pl-5 space-y-1">
+                                    {% for field, errors in form.errors.items %}
+                                        {% for error in errors %}
+                                            <li>{{ error }}</li>
+                                        {% endfor %}
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+            
+            <div class="space-y-4">
+                <!-- Prénom et Nom -->
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label for="{{ form.first_name.id_for_label }}" class="block text-sm font-medium text-gray-700">Prénom</label>
+                        <input id="{{ form.first_name.id_for_label }}" 
+                               name="{{ form.first_name.name }}" 
+                               type="text" 
+                               required 
+                               class="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" 
+                               placeholder="Prénom"
+                               value="{{ form.first_name.value|default:'' }}">
+                    </div>
+                    <div>
+                        <label for="{{ form.last_name.id_for_label }}" class="block text-sm font-medium text-gray-700">Nom</label>
+                        <input id="{{ form.last_name.id_for_label }}" 
+                               name="{{ form.last_name.name }}" 
+                               type="text" 
+                               required 
+                               class="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" 
+                               placeholder="Nom"
+                               value="{{ form.last_name.value|default:'' }}">
+                    </div>
+                </div>
+                
+                <!-- Email -->
+                <div>
+                    <label for="{{ form.email.id_for_label }}" class="block text-sm font-medium text-gray-700">Adresse email</label>
+                    <input id="{{ form.email.id_for_label }}" 
+                           name="{{ form.email.name }}" 
+                           type="email" 
+                           autocomplete="email" 
+                           required 
+                           class="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" 
+                           placeholder="votre@email.com"
+                           value="{{ form.email.value|default:'' }}">
+                </div>
+                
+                <!-- Mot de passe -->
+                <div>
+                    <label for="{{ form.password1.id_for_label }}" class="block text-sm font-medium text-gray-700">Mot de passe</label>
+                    <input id="{{ form.password1.id_for_label }}" 
+                           name="{{ form.password1.name }}" 
+                           type="password" 
+                           autocomplete="new-password" 
+                           required 
+                           class="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" 
+                           placeholder="Mot de passe">
+                    <p class="mt-1 text-xs text-gray-500">Au moins 8 caractères avec lettres et chiffres</p>
+                </div>
+                
+                <!-- Confirmation mot de passe -->
+                <div>
+                    <label for="{{ form.password2.id_for_label }}" class="block text-sm font-medium text-gray-700">Confirmer le mot de passe</label>
+                    <input id="{{ form.password2.id_for_label }}" 
+                           name="{{ form.password2.name }}" 
+                           type="password" 
+                           autocomplete="new-password" 
+                           required 
+                           class="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" 
+                           placeholder="Confirmer le mot de passe">
+                </div>
+            </div>
+
+            <!-- Conditions d'utilisation -->
+            <div class="flex items-center">
+                <input id="terms" name="terms" type="checkbox" required class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                <label for="terms" class="ml-2 block text-sm text-gray-900">
+                    J'accepte les 
+                    <a href="#" class="text-blue-600 hover:text-blue-500">conditions d'utilisation</a>
+                    et la 
+                    <a href="#" class="text-blue-600 hover:text-blue-500">politique de confidentialité</a>
+                </label>
+            </div>
+
+            <div>
+                <button type="submit" class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition duration-150 ease-in-out">
+                    <span class="absolute left-0 inset-y-0 flex items-center pl-3">
+                        <i class="fas fa-user-plus text-green-500 group-hover:text-green-400"></i>
+                    </span>
+                    Créer mon compte
+                </button>
+            </div>
+        </form>
+        
+        <!-- Avantages de l'inscription -->
+        <div class="mt-8 border-t border-gray-200 pt-6">
+            <div class="text-center">
+                <h3 class="text-lg font-medium text-gray-900 mb-4">Pourquoi nous rejoindre ?</h3>
+                <div class="grid grid-cols-1 gap-3">
+                    <div class="flex items-center text-sm text-gray-600">
+                        <i class="fas fa-check-circle text-green-500 mr-2"></i>
+                        Accès à tous les plans d'abonnement
+                    </div>
+                    <div class="flex items-center text-sm text-gray-600">
+                        <i class="fas fa-check-circle text-green-500 mr-2"></i>
+                        Tableau de bord personnalisé
+                    </div>
+                    <div class="flex items-center text-sm text-gray-600">
+                        <i class="fas fa-check-circle text-green-500 mr-2"></i>
+                        Support client dédié
+                    </div>
+                    <div class="flex items-center text-sm text-gray-600">
+                        <i class="fas fa-check-circle text-green-500 mr-2"></i>
+                        Gestion facile de vos abonnements
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Auto-focus sur le premier champ
+    document.addEventListener('DOMContentLoaded', function() {
+        const firstNameField = document.querySelector('input[name="first_name"]');
+        if (firstNameField) {
+            firstNameField.focus();
+        }
+    });
+    
+    // Validation en temps réel du mot de passe
+    document.addEventListener('DOMContentLoaded', function() {
+        const password1 = document.querySelector('input[name="password1"]');
+        const password2 = document.querySelector('input[name="password2"]');
+        
+        function validatePasswords() {
+            if (password1.value && password2.value) {
+                if (password1.value === password2.value) {
+                    password2.classList.remove('border-red-300');
+                    password2.classList.add('border-green-300');
+                } else {
+                    password2.classList.remove('border-green-300');
+                    password2.classList.add('border-red-300');
+                }
+            }
+        }
+        
+        if (password1 && password2) {
+            password1.addEventListener('input', validatePasswords);
+            password2.addEventListener('input', validatePasswords);
+        }
+    });
+</script>
+{% endblock %}

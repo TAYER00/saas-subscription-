@@ -1,0 +1,42 @@
+# Django et extensions
+Django==4.2.7
+django-cors-headers==4.3.1
+django-extensions==3.2.3
+
+# Base de données
+psycopg2-binary==2.9.7  # PostgreSQL
+
+# Cache et sessions
+redis==5.0.1
+django-redis==5.4.0
+
+# Authentification et sécurité
+django-allauth==0.57.0
+Pillow==10.0.1  # Pour les images de profil
+
+# API et sérialisation
+djangorestframework==3.14.0
+djangorestframework-simplejwt==5.3.0
+
+# Utilitaires
+python-decouple==3.8  # Variables d'environnement
+django-crispy-forms==2.1
+crispy-tailwind==0.5.0
+
+# Développement
+django-debug-toolbar==4.2.0
+factory-boy==3.3.0  # Pour les tests
+pytest-django==4.5.2
+
+# Production
+gunicorn==21.2.0
+whitenoise==6.6.0  # Fichiers statiques
+sentry-sdk==1.38.0  # Monitoring des erreurs
+
+# Outils de qualité de code
+flake8==6.1.0
+black==23.9.1
+isort==5.12.0
+
+# Documentation
+Sphinx==7.2.6

@@ -1,0 +1,316 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Dashboard - {{ user.get_full_name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .dashboard-card {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+    }
+    
+    .stat-card {
+        text-align: center;
+        padding: 1rem;
+        border-radius: 8px;
+        color: white;
+    }
+    
+    .stat-card.primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+    .stat-card.success { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+    .stat-card.warning { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+    .stat-card.info { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+    
+    .btn-disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        pointer-events: none;
+    }
+    
+    .role-badge {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+    
+    .role-admin {
+        background-color: #dc2626;
+        color: white;
+    }
+    
+    .role-client {
+        background-color: #059669;
+        color: white;
+    }
+    
+    .activity-item {
+        display: flex;
+        align-items: center;
+        padding: 0.75rem;
+        border-bottom: 1px solid #e5e7eb;
+    }
+    
+    .activity-icon {
+        width: 2rem;
+        height: 2rem;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 0.75rem;
+        font-size: 0.875rem;
+    }
+    
+    .progress-bar {
+        width: 100%;
+        height: 0.5rem;
+        background-color: #e5e7eb;
+        border-radius: 0.25rem;
+        overflow: hidden;
+    }
+    
+    .progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #4facfe 0%, #00f2fe 100%);
+        transition: width 0.3s ease;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6">
+    <!-- En-tête du dashboard -->
+    <div class="dashboard-card">
+        <div class="flex justify-between items-center">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-800">Bienvenue, {{ user.get_full_name|default:user.email }}</h1>
+                <p class="text-gray-600 mt-1">
+                    Rôle: <span class="role-badge {% if is_admin %}role-admin{% else %}role-client{% endif %}">
+                        {% if is_admin %}Administrateur{% else %}Client{% endif %}
+                    </span>
+                </p>
+            </div>
+            <div class="text-right">
+                <p class="text-sm text-gray-500">Dernière connexion</p>
+                <p class="text-lg font-semibold">{{ user.last_login|date:"d/m/Y H:i" }}</p>
+            </div>
+        </div>
+    </div>
+
+    {% if dashboard_type == 'admin' %}
+        <!-- Dashboard Administrateur -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+            <div class="stat-card primary">
+                <h3 class="text-lg font-semibold mb-2">Utilisateurs</h3>
+                <p class="text-3xl font-bold">{{ total_users }}</p>
+                <p class="text-sm opacity-80">+{{ new_users_week }} cette semaine</p>
+            </div>
+            
+            <div class="stat-card success">
+                <h3 class="text-lg font-semibold mb-2">Abonnements Actifs</h3>
+                <p class="text-3xl font-bold">{{ total_subscriptions }}</p>
+                <p class="text-sm opacity-80">En cours</p>
+            </div>
+            
+            <div class="stat-card warning">
+                <h3 class="text-lg font-semibold mb-2">Revenus</h3>
+                <p class="text-3xl font-bold">{{ total_revenue|floatformat:0 }}€</p>
+                <p class="text-sm opacity-80">Total actuel</p>
+            </div>
+            
+            <div class="stat-card info">
+                <h3 class="text-lg font-semibold mb-2">Plans</h3>
+                <p class="text-3xl font-bold">{{ plan_stats|length }}</p>
+                <p class="text-sm opacity-80">Disponibles</p>
+            </div>
+        </div>
+
+        <!-- Actions administrateur -->
+        <div class="dashboard-card">
+            <h2 class="text-xl font-bold mb-4">Actions Administrateur</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <a href="{% url 'auth:user_list' %}" class="btn btn-primary">
+                    👥 Gérer les utilisateurs
+                </a>
+                <a href="{% url 'subscription:admin_subscriptions' %}" class="btn btn-secondary">
+                    📋 Gérer les abonnements
+                </a>
+                <a href="{% url 'subscription:admin_plans' %}" class="btn btn-info">
+                    💼 Gérer les plans
+                </a>
+            </div>
+        </div>
+
+        <!-- Abonnements récents -->
+        {% if recent_subscriptions %}
+        <div class="dashboard-card">
+            <h2 class="text-xl font-bold mb-4">Abonnements Récents</h2>
+            <div class="overflow-x-auto">
+                <table class="min-w-full">
+                    <thead>
+                        <tr class="border-b">
+                            <th class="text-left py-2">Utilisateur</th>
+                            <th class="text-left py-2">Plan</th>
+                            <th class="text-left py-2">Date</th>
+                            <th class="text-left py-2">Montant</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for subscription in recent_subscriptions %}
+                        <tr class="border-b">
+                            <td class="py-2">{{ subscription.user.get_full_name }}</td>
+                            <td class="py-2">{{ subscription.plan.name }}</td>
+                            <td class="py-2">{{ subscription.created_at|date:"d/m/Y" }}</td>
+                            <td class="py-2">{{ subscription.amount_paid }}€</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+
+    {% else %}
+        <!-- Dashboard Client -->
+        {% if current_subscription %}
+        <div class="dashboard-card">
+            <h2 class="text-xl font-bold mb-4">Mon Abonnement Actuel</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <h3 class="font-semibold text-gray-700">Plan</h3>
+                    <p class="text-2xl font-bold text-blue-600">{{ current_subscription.plan.name }}</p>
+                    <p class="text-gray-600">{{ current_subscription.plan.description }}</p>
+                </div>
+                <div>
+                    <h3 class="font-semibold text-gray-700">Statut</h3>
+                    <p class="text-lg font-semibold text-green-600">{{ current_subscription.get_status_display }}</p>
+                    {% if current_subscription.days_remaining %}
+                    <p class="text-sm text-gray-600">{{ current_subscription.days_remaining }} jours restants</p>
+                    {% endif %}
+                </div>
+                <div>
+                    <h3 class="font-semibold text-gray-700">Prix</h3>
+                    <p class="text-2xl font-bold text-green-600">{{ current_subscription.plan.price }}€</p>
+                    <p class="text-gray-600">par {{ current_subscription.plan.get_billing_cycle_display|lower }}</p>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="dashboard-card bg-yellow-50 border-l-4 border-yellow-400">
+            <h2 class="text-xl font-bold mb-2 text-yellow-800">Aucun abonnement actif</h2>
+            <p class="text-yellow-700 mb-4">Souscrivez à un plan pour accéder à toutes nos fonctionnalités.</p>
+            <a href="{% url 'subscription:plans' %}" class="btn btn-primary">Voir les plans disponibles</a>
+        </div>
+        {% endif %}
+
+        <!-- Actions client -->
+        <div class="dashboard-card">
+            <h2 class="text-xl font-bold mb-4">Actions Disponibles</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <a href="{% url 'subscription:plans' %}" class="btn btn-primary">
+                    📋 Voir les plans
+                </a>
+                
+                <a href="{% url 'subscription:my_subscription' %}" 
+                   class="btn btn-secondary {% if not current_subscription %}btn-disabled{% endif %}">
+                    📊 Mon abonnement
+                </a>
+                
+                <a href="{% url 'auth:profile' %}" class="btn btn-info">
+                    👤 Mon profil
+                </a>
+            </div>
+        </div>
+
+        <!-- Plans disponibles pour mise à niveau -->
+        {% if available_plans %}
+        <div class="dashboard-card">
+            <h2 class="text-xl font-bold mb-4">Plans Recommandés</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {% for plan in available_plans %}
+                <div class="border rounded-lg p-4 hover:shadow-lg transition-shadow">
+                    <h3 class="font-bold text-lg mb-2">{{ plan.name }}</h3>
+                    <p class="text-gray-600 mb-3">{{ plan.description|truncatewords:15 }}</p>
+                    <p class="text-2xl font-bold text-blue-600 mb-3">{{ plan.price }}€</p>
+                    <a href="{% url 'subscription:subscribe' plan.id %}" class="btn btn-sm btn-primary w-full">
+                        Choisir ce plan
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    {% endif %}
+
+    <!-- Activité récente -->
+    <div class="dashboard-card">
+        <h2 class="text-xl font-bold mb-4">Activité Récente</h2>
+        <div id="activity-feed" class="space-y-2">
+            <div class="text-center py-4">
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                <p class="text-gray-600 mt-2">Chargement...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Scripts pour les données dynamiques -->
+<script>
+// Charger les statistiques rapides
+function loadQuickStats() {
+    fetch('{% url "dashboard:quick_stats_api" %}')
+        .then(response => response.json())
+        .then(data => {
+            console.log('Stats loaded:', data);
+            // Mettre à jour les statistiques si nécessaire
+        })
+        .catch(error => console.error('Erreur lors du chargement des stats:', error));
+}
+
+// Charger le feed d'activité
+function loadActivityFeed() {
+    fetch('{% url "dashboard:activity_feed_api" %}')
+        .then(response => response.json())
+        .then(data => {
+            const feedContainer = document.getElementById('activity-feed');
+            if (data.activities && data.activities.length > 0) {
+                feedContainer.innerHTML = data.activities.map(activity => `
+                    <div class="activity-item">
+                        <div class="activity-icon bg-blue-100 text-blue-600">
+                            <i class="fas fa-${activity.icon || 'info'}"></i>
+                        </div>
+                        <div class="flex-1">
+                            <p class="text-sm font-medium">${activity.message}</p>
+                            <p class="text-xs text-gray-500">${new Date(activity.timestamp).toLocaleDateString('fr-FR')}</p>
+                        </div>
+                    </div>
+                `).join('');
+            } else {
+                feedContainer.innerHTML = '<p class="text-gray-500 text-center py-4">Aucune activité récente</p>';
+            }
+        })
+        .catch(error => {
+            console.error('Erreur lors du chargement de l\'activité:', error);
+            document.getElementById('activity-feed').innerHTML = 
+                '<p class="text-red-500 text-center py-4">Erreur lors du chargement</p>';
+        });
+}
+
+// Charger les données au chargement de la page
+document.addEventListener('DOMContentLoaded', function() {
+    loadQuickStats();
+    loadActivityFeed();
+    
+    // Actualiser les données toutes les 5 minutes
+    setInterval(loadQuickStats, 300000);
+    setInterval(loadActivityFeed, 300000);
+});
+</script>
+{% endblock %}

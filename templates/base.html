@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}SaaS Subscription Platform{% endblock %}</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- Custom CSS -->
+    <style>
+        .btn {
+            @apply px-4 py-2 rounded-lg font-medium transition-all duration-200 inline-block text-center;
+        }
+        .btn-primary {
+            @apply bg-blue-600 text-white hover:bg-blue-700 focus:ring-4 focus:ring-blue-300;
+        }
+        .btn-secondary {
+            @apply bg-gray-600 text-white hover:bg-gray-700 focus:ring-4 focus:ring-gray-300;
+        }
+        .btn-success {
+            @apply bg-green-600 text-white hover:bg-green-700 focus:ring-4 focus:ring-green-300;
+        }
+        .btn-warning {
+            @apply bg-yellow-600 text-white hover:bg-yellow-700 focus:ring-4 focus:ring-yellow-300;
+        }
+        .btn-danger {
+            @apply bg-red-600 text-white hover:bg-red-700 focus:ring-4 focus:ring-red-300;
+        }
+        .btn-info {
+            @apply bg-cyan-600 text-white hover:bg-cyan-700 focus:ring-4 focus:ring-cyan-300;
+        }
+        .btn-sm {
+            @apply px-3 py-1 text-sm;
+        }
+        .btn-lg {
+            @apply px-6 py-3 text-lg;
+        }
+        
+        .navbar-brand {
+            @apply text-xl font-bold text-white;
+        }
+        
+        .dropdown:hover .dropdown-menu {
+            @apply block;
+        }
+        
+        .dropdown-menu {
+            @apply hidden absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50;
+        }
+        
+        .alert {
+            @apply p-4 mb-4 rounded-lg;
+        }
+        .alert-success {
+            @apply bg-green-100 border border-green-400 text-green-700;
+        }
+        .alert-error {
+            @apply bg-red-100 border border-red-400 text-red-700;
+        }
+        .alert-warning {
+            @apply bg-yellow-100 border border-yellow-400 text-yellow-700;
+        }
+        .alert-info {
+            @apply bg-blue-100 border border-blue-400 text-blue-700;
+        }
+    </style>
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Navigation -->
+    <nav class="bg-gradient-to-r from-blue-600 to-purple-600 shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <!-- Logo et navigation principale -->
+                <div class="flex items-center">
+                    <a href="{% url 'dashboard:index' %}" class="navbar-brand">
+                        <i class="fas fa-rocket mr-2"></i>
+                        SaaS Platform
+                    </a>
+                    
+                    {% if user.is_authenticated %}
+                    <div class="hidden md:ml-6 md:flex md:space-x-4">
+                        <a href="{% url 'dashboard:index' %}" class="text-white hover:text-gray-200 px-3 py-2 rounded-md text-sm font-medium">
+                            <i class="fas fa-tachometer-alt mr-1"></i> Dashboard
+                        </a>
+                        
+                        {% if user.is_admin %}
+                        <div class="relative dropdown">
+                            <button class="text-white hover:text-gray-200 px-3 py-2 rounded-md text-sm font-medium flex items-center">
+                                <i class="fas fa-cog mr-1"></i> Administration
+                                <i class="fas fa-chevron-down ml-1 text-xs"></i>
+                            </button>
+                            <div class="dropdown-menu">
+                                <a href="{% url 'auth:user_list' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                    <i class="fas fa-users mr-2"></i> Utilisateurs
+                                </a>
+                                <a href="{% url 'subscription:admin_subscriptions' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                    <i class="fas fa-credit-card mr-2"></i> Abonnements
+                                </a>
+                                <a href="{% url 'subscription:admin_plans' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                    <i class="fas fa-list mr-2"></i> Plans
+                                </a>
+                                <div class="border-t border-gray-100"></div>
+                                <a href="/admin/" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                    <i class="fas fa-tools mr-2"></i> Admin Django
+                                </a>
+                            </div>
+                        </div>
+                        {% else %}
+                        <a href="{% url 'subscription:plans' %}" class="text-white hover:text-gray-200 px-3 py-2 rounded-md text-sm font-medium">
+                            <i class="fas fa-list mr-1"></i> Plans
+                        </a>
+                        <a href="{% url 'subscription:my_subscription' %}" class="text-white hover:text-gray-200 px-3 py-2 rounded-md text-sm font-medium">
+                            <i class="fas fa-user-circle mr-1"></i> Mon Abonnement
+                        </a>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Menu utilisateur -->
+                <div class="flex items-center">
+                    {% if user.is_authenticated %}
+                    <div class="relative dropdown">
+                        <button class="flex items-center text-white hover:text-gray-200 px-3 py-2 rounded-md text-sm font-medium">
+                            <img class="h-8 w-8 rounded-full mr-2" src="https://ui-avatars.com/api/?name={{ user.get_full_name|urlencode }}&background=random" alt="Avatar">
+                            <span class="hidden md:block">{{ user.get_full_name|default:user.email }}</span>
+                            <i class="fas fa-chevron-down ml-1 text-xs"></i>
+                        </button>
+                        <div class="dropdown-menu">
+                            <div class="px-4 py-2 text-sm text-gray-700 border-b border-gray-100">
+                                <div class="font-medium">{{ user.get_full_name|default:user.email }}</div>
+                                <div class="text-xs text-gray-500">
+                                    {% if user.is_admin %}Administrateur{% else %}Client{% endif %}
+                                </div>
+                            </div>
+                            <a href="{% url 'auth:profile' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                <i class="fas fa-user mr-2"></i> Mon Profil
+                            </a>
+                            <a href="{% url 'auth:profile_edit' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                <i class="fas fa-edit mr-2"></i> Modifier le Profil
+                            </a>
+                            <div class="border-t border-gray-100"></div>
+                            <a href="{% url 'auth:logout' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                <i class="fas fa-sign-out-alt mr-2"></i> Déconnexion
+                            </a>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="space-x-2">
+                        <a href="{% url 'auth:login' %}" class="text-white hover:text-gray-200 px-3 py-2 rounded-md text-sm font-medium">
+                            <i class="fas fa-sign-in-alt mr-1"></i> Connexion
+                        </a>
+                        <a href="{% url 'auth:register' %}" class="bg-white text-blue-600 hover:bg-gray-100 px-4 py-2 rounded-md text-sm font-medium">
+                            <i class="fas fa-user-plus mr-1"></i> Inscription
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Menu mobile -->
+                <div class="md:hidden flex items-center">
+                    <button id="mobile-menu-button" class="text-white hover:text-gray-200 p-2">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Menu mobile -->
+        <div id="mobile-menu" class="hidden md:hidden bg-blue-700">
+            {% if user.is_authenticated %}
+            <div class="px-2 pt-2 pb-3 space-y-1">
+                <a href="{% url 'dashboard:index' %}" class="text-white hover:bg-blue-600 block px-3 py-2 rounded-md text-base font-medium">
+                    <i class="fas fa-tachometer-alt mr-2"></i> Dashboard
+                </a>
+                
+                {% if user.is_admin %}
+                <a href="{% url 'auth:user_list' %}" class="text-white hover:bg-blue-600 block px-3 py-2 rounded-md text-base font-medium">
+                    <i class="fas fa-users mr-2"></i> Utilisateurs
+                </a>
+                <a href="{% url 'subscription:admin_subscriptions' %}" class="text-white hover:bg-blue-600 block px-3 py-2 rounded-md text-base font-medium">
+                    <i class="fas fa-credit-card mr-2"></i> Abonnements
+                </a>
+                <a href="{% url 'subscription:admin_plans' %}" class="text-white hover:bg-blue-600 block px-3 py-2 rounded-md text-base font-medium">
+                    <i class="fas fa-list mr-2"></i> Plans
+                </a>
+                {% else %}
+                <a href="{% url 'subscription:plans' %}" class="text-white hover:bg-blue-600 block px-3 py-2 rounded-md text-base font-medium">
+                    <i class="fas fa-list mr-2"></i> Plans
+                </a>
+                <a href="{% url 'subscription:my_subscription' %}" class="text-white hover:bg-blue-600 block px-3 py-2 rounded-md text-base font-medium">
+                    <i class="fas fa-user-circle mr-2"></i> Mon Abonnement
+                </a>
+                {% endif %}
+                
+                <div class="border-t border-blue-600 pt-2">
+                    <a href="{% url 'auth:profile' %}" class="text-white hover:bg-blue-600 block px-3 py-2 rounded-md text-base font-medium">
+                        <i class="fas fa-user mr-2"></i> Mon Profil
+                    </a>
+                    <a href="{% url 'auth:logout' %}" class="text-white hover:bg-blue-600 block px-3 py-2 rounded-md text-base font-medium">
+                        <i class="fas fa-sign-out-alt mr-2"></i> Déconnexion
+                    </a>
+                </div>
+            </div>
+            {% else %}
+            <div class="px-2 pt-2 pb-3 space-y-1">
+                <a href="{% url 'auth:login' %}" class="text-white hover:bg-blue-600 block px-3 py-2 rounded-md text-base font-medium">
+                    <i class="fas fa-sign-in-alt mr-2"></i> Connexion
+                </a>
+                <a href="{% url 'auth:register' %}" class="text-white hover:bg-blue-600 block px-3 py-2 rounded-md text-base font-medium">
+                    <i class="fas fa-user-plus mr-2"></i> Inscription
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </nav>
+    
+    <!-- Messages Flash -->
+    {% if messages %}
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} flex items-center justify-between">
+            <div class="flex items-center">
+                {% if message.tags == 'success' %}
+                <i class="fas fa-check-circle mr-2"></i>
+                {% elif message.tags == 'error' %}
+                <i class="fas fa-exclamation-circle mr-2"></i>
+                {% elif message.tags == 'warning' %}
+                <i class="fas fa-exclamation-triangle mr-2"></i>
+                {% else %}
+                <i class="fas fa-info-circle mr-2"></i>
+                {% endif %}
+                {{ message }}
+            </div>
+            <button onclick="this.parentElement.remove()" class="text-gray-500 hover:text-gray-700">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    
+    <!-- Contenu principal -->
+    <main class="flex-1">
+        {% block content %}
+        {% endblock %}
+    </main>
+    
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white mt-auto">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <div>
+                    <h3 class="text-lg font-semibold mb-4">SaaS Platform</h3>
+                    <p class="text-gray-400 text-sm">
+                        Plateforme de gestion d'abonnements moderne et intuitive.
+                    </p>
+                </div>
+                <div>
+                    <h4 class="text-md font-semibold mb-3">Liens Rapides</h4>
+                    <ul class="space-y-2 text-sm">
+                        <li><a href="{% url 'dashboard:index' %}" class="text-gray-400 hover:text-white">Dashboard</a></li>
+                        <li><a href="{% url 'subscription:plans' %}" class="text-gray-400 hover:text-white">Plans</a></li>
+                        {% if user.is_authenticated %}
+                        <li><a href="{% url 'auth:profile' %}" class="text-gray-400 hover:text-white">Mon Profil</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="text-md font-semibold mb-3">Support</h4>
+                    <ul class="space-y-2 text-sm">
+                        <li><a href="#" class="text-gray-400 hover:text-white">Centre d'aide</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white">Contact</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white">Documentation</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="text-md font-semibold mb-3">Suivez-nous</h4>
+                    <div class="flex space-x-4">
+                        <a href="#" class="text-gray-400 hover:text-white">
+                            <i class="fab fa-twitter"></i>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-white">
+                            <i class="fab fa-facebook"></i>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-white">
+                            <i class="fab fa-linkedin"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="border-t border-gray-700 mt-8 pt-8 text-center text-sm text-gray-400">
+                <p>&copy; 2024 SaaS Platform. Tous droits réservés.</p>
+            </div>
+        </div>
+    </footer>
+    
+    <!-- Scripts -->
+    <script>
+        // Menu mobile toggle
+        document.getElementById('mobile-menu-button').addEventListener('click', function() {
+            const menu = document.getElementById('mobile-menu');
+            menu.classList.toggle('hidden');
+        });
+        
+        // Auto-hide alerts after 5 seconds
+        setTimeout(function() {
+            const alerts = document.querySelectorAll('.alert');
+            alerts.forEach(function(alert) {
+                alert.style.transition = 'opacity 0.5s';
+                alert.style.opacity = '0';
+                setTimeout(function() {
+                    alert.remove();
+                }, 500);
+            });
+        }, 5000);
+    </script>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

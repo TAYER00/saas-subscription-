@@ -1,0 +1,94 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Plans d'Abonnement{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 py-12">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- Header -->
+        <div class="text-center">
+            <h2 class="text-3xl font-extrabold text-gray-900 sm:text-4xl">
+                Choisissez votre plan d'abonnement
+            </h2>
+            <p class="mt-4 text-xl text-gray-600">
+                Sélectionnez le plan qui correspond le mieux à vos besoins
+            </p>
+        </div>
+
+        <!-- Plans Grid -->
+        <div class="mt-12 space-y-4 sm:mt-16 sm:space-y-0 sm:grid sm:grid-cols-2 sm:gap-6 lg:max-w-4xl lg:mx-auto xl:max-w-none xl:mx-0 xl:grid-cols-3">
+            {% for plan in plans %}
+            <div class="border border-gray-200 rounded-lg shadow-sm divide-y divide-gray-200 bg-white">
+                <div class="p-6">
+                    <h2 class="text-lg leading-6 font-medium text-gray-900">{{ plan.name }}</h2>
+                    <p class="mt-4 text-sm text-gray-500">{{ plan.description }}</p>
+                    <p class="mt-8">
+                        <span class="text-4xl font-extrabold text-gray-900">{{ plan.price }}€</span>
+                        <span class="text-base font-medium text-gray-500">/mois</span>
+                    </p>
+                    {% if plan.features %}
+                    <ul class="mt-6 space-y-4">
+                        {% for feature in plan.features.splitlines %}
+                        <li class="flex space-x-3">
+                            <svg class="flex-shrink-0 h-5 w-5 text-green-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                            </svg>
+                            <span class="text-sm text-gray-500">{{ feature }}</span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% endif %}
+                </div>
+                <div class="pt-6 pb-8 px-6">
+                    {% if user.is_authenticated %}
+                        {% if user.subscription and user.subscription.plan == plan %}
+                            <button class="w-full bg-gray-300 border border-gray-300 rounded-md py-2 text-sm font-semibold text-gray-500 text-center cursor-not-allowed" disabled>
+                                Plan actuel
+                            </button>
+                        {% else %}
+                            <a href="{% url 'subscription:subscribe' plan.id %}" class="w-full bg-blue-600 border border-transparent rounded-md py-2 text-sm font-semibold text-white text-center hover:bg-blue-700 block">
+                                {% if user.subscription %}Changer de plan{% else %}S'abonner{% endif %}
+                            </a>
+                        {% endif %}
+                    {% else %}
+                        <a href="{% url 'auth:register' %}" class="w-full bg-blue-600 border border-transparent rounded-md py-2 text-sm font-semibold text-white text-center hover:bg-blue-700 block">
+                            Commencer
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-span-full text-center py-12">
+                <div class="text-gray-500">
+                    <i class="fas fa-credit-card text-4xl mb-4"></i>
+                    <p class="text-lg">Aucun plan d'abonnement disponible pour le moment.</p>
+                    <p class="text-sm mt-2">Veuillez revenir plus tard.</p>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- FAQ Section -->
+        <div class="mt-16">
+            <div class="max-w-3xl mx-auto">
+                <h3 class="text-2xl font-bold text-gray-900 text-center mb-8">Questions fréquentes</h3>
+                <div class="space-y-6">
+                    <div class="bg-white rounded-lg shadow p-6">
+                        <h4 class="text-lg font-semibold text-gray-900 mb-2">Puis-je changer de plan à tout moment ?</h4>
+                        <p class="text-gray-600">Oui, vous pouvez upgrader ou downgrader votre plan à tout moment. Les changements prennent effet immédiatement.</p>
+                    </div>
+                    <div class="bg-white rounded-lg shadow p-6">
+                        <h4 class="text-lg font-semibold text-gray-900 mb-2">Comment puis-je annuler mon abonnement ?</h4>
+                        <p class="text-gray-600">Vous pouvez annuler votre abonnement depuis votre tableau de bord. L'accès reste actif jusqu'à la fin de la période payée.</p>
+                    </div>
+                    <div class="bg-white rounded-lg shadow p-6">
+                        <h4 class="text-lg font-semibold text-gray-900 mb-2">Y a-t-il une période d'essai gratuite ?</h4>
+                        <p class="text-gray-600">Nous offrons une période d'essai de 14 jours pour tous nos plans premium. Aucune carte de crédit requise.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

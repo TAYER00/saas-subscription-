@@ -1,0 +1,187 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Mon Abonnement{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 py-8">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- Header -->
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold text-gray-900">Mon Abonnement</h1>
+            <p class="mt-2 text-gray-600">Gérez votre abonnement et consultez votre historique</p>
+        </div>
+
+        {% if subscription %}
+        <!-- Current Subscription -->
+        <div class="bg-white shadow rounded-lg mb-8">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h2 class="text-xl font-semibold text-gray-900">Abonnement Actuel</h2>
+            </div>
+            <div class="p-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <h3 class="text-lg font-medium text-gray-900 mb-4">{{ subscription.plan.name }}</h3>
+                        <p class="text-gray-600 mb-4">{{ subscription.plan.description }}</p>
+                        <div class="space-y-2">
+                            <div class="flex justify-between">
+                                <span class="text-gray-500">Prix mensuel:</span>
+                                <span class="font-semibold">{{ subscription.plan.price }}€</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-500">Statut:</span>
+                                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full {% if subscription.is_active %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %}">
+                                    {% if subscription.is_active %}Actif{% else %}Inactif{% endif %}
+                                </span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-500">Date de début:</span>
+                                <span class="font-semibold">{{ subscription.start_date|date:"d/m/Y" }}</span>
+                            </div>
+                            {% if subscription.end_date %}
+                            <div class="flex justify-between">
+                                <span class="text-gray-500">Date de fin:</span>
+                                <span class="font-semibold">{{ subscription.end_date|date:"d/m/Y" }}</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div>
+                        {% if subscription.plan.features %}
+                        <h4 class="text-md font-medium text-gray-900 mb-3">Fonctionnalités incluses:</h4>
+                        <ul class="space-y-2">
+                            {% for feature in subscription.plan.features.splitlines %}
+                            <li class="flex items-center">
+                                <svg class="h-4 w-4 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                </svg>
+                                <span class="text-sm text-gray-600">{{ feature }}</span>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Action Buttons -->
+                <div class="mt-6 flex flex-wrap gap-3">
+                    <a href="{% url 'subscription:plans' %}" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
+                        <i class="fas fa-exchange-alt mr-2"></i>
+                        Changer de plan
+                    </a>
+                    {% if subscription.is_active %}
+                    <button onclick="confirmCancellation()" class="inline-flex items-center px-4 py-2 border border-red-300 text-sm font-medium rounded-md text-red-700 bg-white hover:bg-red-50">
+                        <i class="fas fa-times mr-2"></i>
+                        Annuler l'abonnement
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <!-- No Subscription -->
+        <div class="bg-white shadow rounded-lg mb-8">
+            <div class="p-8 text-center">
+                <div class="text-gray-400 mb-4">
+                    <i class="fas fa-credit-card text-6xl"></i>
+                </div>
+                <h2 class="text-2xl font-semibold text-gray-900 mb-2">Aucun abonnement actif</h2>
+                <p class="text-gray-600 mb-6">Vous n'avez pas encore d'abonnement. Découvrez nos plans pour commencer.</p>
+                <a href="{% url 'subscription:plans' %}" class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
+                    <i class="fas fa-rocket mr-2"></i>
+                    Voir les plans
+                </a>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Subscription History -->
+        {% if subscription_history %}
+        <div class="bg-white shadow rounded-lg">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h2 class="text-xl font-semibold text-gray-900">Historique des Abonnements</h2>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Plan</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Prix</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for history in subscription_history %}
+                        <tr>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                {{ history.plan.name }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full 
+                                    {% if history.action == 'subscribe' %}bg-green-100 text-green-800
+                                    {% elif history.action == 'upgrade' %}bg-blue-100 text-blue-800
+                                    {% elif history.action == 'downgrade' %}bg-yellow-100 text-yellow-800
+                                    {% elif history.action == 'cancel' %}bg-red-100 text-red-800
+                                    {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                    {% if history.action == 'subscribe' %}Souscription
+                                    {% elif history.action == 'upgrade' %}Upgrade
+                                    {% elif history.action == 'downgrade' %}Downgrade
+                                    {% elif history.action == 'cancel' %}Annulation
+                                    {% else %}{{ history.action|title }}{% endif %}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {{ history.created_at|date:"d/m/Y H:i" }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {{ history.plan.price }}€
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Cancellation Confirmation Modal -->
+<div id="cancellationModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+        <div class="mt-3 text-center">
+            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
+                <i class="fas fa-exclamation-triangle text-red-600 text-xl"></i>
+            </div>
+            <h3 class="text-lg font-medium text-gray-900 mt-4">Confirmer l'annulation</h3>
+            <div class="mt-2 px-7 py-3">
+                <p class="text-sm text-gray-500">
+                    Êtes-vous sûr de vouloir annuler votre abonnement ? Cette action ne peut pas être annulée.
+                </p>
+            </div>
+            <div class="items-center px-4 py-3">
+                <button onclick="closeModal()" class="px-4 py-2 bg-gray-500 text-white text-base font-medium rounded-md w-24 mr-2 hover:bg-gray-600">
+                    Annuler
+                </button>
+                <form method="post" action="{% url 'subscription:cancel' %}" class="inline">
+                    {% csrf_token %}
+                    <button type="submit" class="px-4 py-2 bg-red-500 text-white text-base font-medium rounded-md w-24 hover:bg-red-600">
+                        Confirmer
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function confirmCancellation() {
+    document.getElementById('cancellationModal').classList.remove('hidden');
+}
+
+function closeModal() {
+    document.getElementById('cancellationModal').classList.add('hidden');
+}
+</script>
+{% endblock %}
