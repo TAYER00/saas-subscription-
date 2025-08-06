@@ -69,11 +69,28 @@
                         <i class="fas fa-exchange-alt mr-2"></i>
                         Changer de plan
                     </a>
-                    {% if subscription.is_active %}
+                    {% comment %}
+                    Le bouton d'annulation n'est visible que pour :
+                    - Les abonnements actifs
+                    - Les abonnements payants (prix > 0)
+                    - Permet de passer au plan gratuit
+                    {% endcomment %}
+                    {% if subscription.is_active and subscription.plan.price > 0 %}
                     <button onclick="confirmCancellation()" class="inline-flex items-center px-4 py-2 border border-red-300 text-sm font-medium rounded-md text-red-700 bg-white hover:bg-red-50">
                         <i class="fas fa-times mr-2"></i>
                         Annuler l'abonnement
                     </button>
+                    {% endif %}
+                    
+                    <!-- Bouton de test des permissions - Visible uniquement pour les plans Premium -->
+                    {% if subscription.plan.plan_type == 'premium' %}
+                    <a href="{% url 'subscription:test_permissions' %}" class="inline-flex items-center px-4 py-2 border border-yellow-300 text-sm font-medium rounded-md text-yellow-700 bg-yellow-50 hover:bg-yellow-100">
+                        <i class="fas fa-flask mr-2"></i>
+                        Test Permissions
+                        <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
+                            Premium
+                        </span>
+                    </a>
                     {% endif %}
                 </div>
             </div>
@@ -164,7 +181,7 @@
                 <button onclick="closeModal()" class="px-4 py-2 bg-gray-500 text-white text-base font-medium rounded-md w-24 mr-2 hover:bg-gray-600">
                     Annuler
                 </button>
-                <form method="post" action="{% url 'subscription:cancel' %}" class="inline">
+                <form method="post" action="{% url 'subscription:cancel_subscription' %}" class="inline">
                     {% csrf_token %}
                     <button type="submit" class="px-4 py-2 bg-red-500 text-white text-base font-medium rounded-md w-24 hover:bg-red-600">
                         Confirmer

@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Erreur {{ error_type }} - {{ error_title }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+        
+        .float-animation {
+            animation: float 3s ease-in-out infinite;
+        }
+        
+        .pulse-animation {
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
+        .shake-animation {
+            animation: shake 0.5s ease-in-out;
+        }
+        
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .error-card {
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .btn-hover {
+            transition: all 0.3s ease;
+        }
+        
+        .btn-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        }
+    </style>
+</head>
+<body class="gradient-bg min-h-screen flex items-center justify-center p-4">
+    <div class="error-card rounded-2xl p-8 max-w-md w-full text-center text-white shadow-2xl">
+        <!-- Icône d'erreur -->
+        <div class="mb-6">
+            {% if error_type == '404' %}
+                <i class="fas fa-search text-6xl float-animation text-yellow-300"></i>
+            {% elif error_type == '405' %}
+                <i class="fas fa-ban text-6xl shake-animation text-red-300"></i>
+            {% else %}
+                <i class="fas fa-exclamation-triangle text-6xl pulse-animation text-orange-300"></i>
+            {% endif %}
+        </div>
+        
+        <!-- Code d'erreur -->
+        <h1 class="text-6xl font-bold mb-4 text-white">
+            {{ error_type }}
+        </h1>
+        
+        <!-- Titre de l'erreur -->
+        <h2 class="text-2xl font-semibold mb-4 text-gray-100">
+            {{ error_title }}
+        </h2>
+        
+        <!-- Message d'erreur -->
+        <p class="text-gray-200 mb-4 leading-relaxed">
+            {{ error_message }}
+        </p>
+        
+        <!-- Suggestion -->
+        <div class="bg-white bg-opacity-10 rounded-lg p-4 mb-6">
+            <p class="text-sm text-gray-100">
+                <i class="fas fa-lightbulb text-yellow-300 mr-2"></i>
+                {{ error_suggestion }}
+            </p>
+        </div>
+        
+        <!-- Informations techniques (en mode debug) -->
+        {% if debug %}
+            <div class="bg-red-500 bg-opacity-20 rounded-lg p-3 mb-6 text-left">
+                <h4 class="font-semibold text-red-200 mb-2">
+                    <i class="fas fa-bug mr-2"></i>Informations techniques :
+                </h4>
+                <p class="text-xs text-red-100">URL demandée : {{ requested_url }}</p>
+                {% if requested_method %}
+                    <p class="text-xs text-red-100">Méthode : {{ requested_method }}</p>
+                {% endif %}
+            </div>
+        {% endif %}
+        
+        <!-- Boutons d'action -->
+        <div class="space-y-3">
+            <button onclick="history.back()" 
+                    class="btn-hover w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-300">
+                <i class="fas fa-arrow-left mr-2"></i>
+                Retour à la page précédente
+            </button>
+            
+            <a href="/dashboard/" 
+               class="btn-hover block w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-300 no-underline">
+                <i class="fas fa-home mr-2"></i>
+                Retour à l'accueil
+            </a>
+            
+            {% if error_type == '405' %}
+                <div class="mt-4 p-3 bg-yellow-500 bg-opacity-20 rounded-lg">
+                    <p class="text-xs text-yellow-100">
+                        <i class="fas fa-info-circle mr-1"></i>
+                        Cette erreur se produit généralement lorsque vous essayez d'accéder à une page avec une méthode HTTP incorrecte.
+                    </p>
+                </div>
+            {% endif %}
+        </div>
+        
+        <!-- Footer -->
+        <div class="mt-8 pt-6 border-t border-white border-opacity-20">
+            <p class="text-xs text-gray-300">
+                Si le problème persiste, contactez l'administrateur du site.
+            </p>
+        </div>
+    </div>
+    
+    <!-- Particules flottantes -->
+    <div id="particles"></div>
+    
+    <script>
+        // Création de particules flottantes
+        function createParticles() {
+            const particlesContainer = document.getElementById('particles');
+            const particleCount = 20;
+            
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'fixed w-2 h-2 bg-white bg-opacity-20 rounded-full pointer-events-none';
+                particle.style.left = Math.random() * 100 + 'vw';
+                particle.style.top = Math.random() * 100 + 'vh';
+                particle.style.animationDelay = Math.random() * 3 + 's';
+                particle.style.animation = 'float 6s ease-in-out infinite';
+                particlesContainer.appendChild(particle);
+            }
+        }
+        
+        // Animation au chargement
+        document.addEventListener('DOMContentLoaded', function() {
+            createParticles();
+            
+            // Animation d'entrée pour la carte d'erreur
+            const errorCard = document.querySelector('.error-card');
+            errorCard.style.opacity = '0';
+            errorCard.style.transform = 'translateY(50px)';
+            
+            setTimeout(() => {
+                errorCard.style.transition = 'all 0.8s ease';
+                errorCard.style.opacity = '1';
+                errorCard.style.transform = 'translateY(0)';
+            }, 100);
+        });
+        
+        // Effet de secousse sur les erreurs 405
+        {% if error_type == '405' %}
+            setTimeout(() => {
+                const icon = document.querySelector('.fa-ban');
+                icon.classList.add('shake-animation');
+            }, 500);
+        {% endif %}
+    </script>
+</body>
+</html>

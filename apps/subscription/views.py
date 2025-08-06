@@ -18,6 +18,8 @@ from django.utils import timezone
 # === IMPORTS LOCAUX ===
 # Modèles de l'application subscription
 from .models import Plan, Subscription, SubscriptionHistory
+# Modèles pour les permissions temporaires
+from .models_permissions import UserTemporaryPermission
 # Permissions personnalisées pour les administrateurs
 from apps.auth.permissions import admin_required, AdminRequiredMixin
 
@@ -128,16 +130,16 @@ def subscribe_to_plan(request, plan_id):
     Cette fonction :
     - Vérifie l'existence et l'activité du plan
     - Gère les abonnements existants (redirection vers changement)
-    - Crée un nouvel abonnement si aucun n'existe
+    - Pour les plans gratuits : crée directement l'abonnement
+    - Pour les plans payants : redirige vers la page de paiement
     - Enregistre l'historique de l'action
-    - Redirige vers la page de gestion de l'abonnement
     
     Args:
         request: Requête HTTP
         plan_id (int): ID du plan à souscrire
     
     Returns:
-        HttpResponse: Redirection vers my_subscription ou change_plan
+        HttpResponse: Redirection vers payment, my_subscription ou change_plan
     
     Requires:
         - Utilisateur authentifié (@login_required)
@@ -160,30 +162,120 @@ def subscribe_to_plan(request, plan_id):
             # L'utilisateur a un autre plan : redirection vers changement
             return redirect('subscription:change_plan', plan_id=plan.id)
     
-    # Créer un nouvel abonnement pour l'utilisateur
-    subscription = Subscription.objects.create(
+    # Vérifier si le plan est gratuit ou payant
+    if plan.price == 0:
+        # Plan gratuit : créer directement l'abonnement
+        subscription = Subscription.objects.create(
+            user=request.user,
+            plan=plan,
+            status='active',
+            amount_paid=0.00
+        )
+        
+        # Créer une entrée dans l'historique
+        SubscriptionHistory.objects.create(
+            subscription=subscription,
+            action='created',
+            new_plan=plan,
+            notes=f'Abonnement gratuit au plan {plan.name}'
+        )
+        
+        messages.success(
+            request,
+            f'Félicitations! Vous êtes maintenant abonné au plan {plan.name}.'
+        )
+        return redirect('subscription:my_subscription')
+    else:
+        # Plan payant : rediriger vers la page de paiement
+        return redirect('subscription:payment', plan_id=plan.id)
+
+
+@login_required
+def payment_page(request, plan_id):
+    """
+    Vue pour afficher la page de paiement d'un plan premium.
+    
+    Cette fonction :
+    - Vérifie que le plan existe et est payant
+    - Affiche les détails du plan et le formulaire de paiement
+    - Traite le paiement (simulation)
+    - Crée l'abonnement après paiement réussi
+    
+    Args:
+        request: Requête HTTP
+        plan_id (int): ID du plan à payer
+    
+    Returns:
+        HttpResponse: Page de paiement ou redirection
+    
+    Requires:
+        - Utilisateur authentifié (@login_required)
+        - Plan existant et payant
+    """
+    plan = get_object_or_404(Plan, id=plan_id, is_active=True)
+    
+    # Vérifier que le plan est payant
+    if plan.price == 0:
+        messages.error(request, 'Ce plan est gratuit, aucun paiement requis.')
+        return redirect('subscription:subscribe', plan_id=plan.id)
+    
+    # Vérifier si l'utilisateur a déjà un abonnement actif
+    existing_subscription = Subscription.objects.filter(
         user=request.user,
-        plan=plan,
-        status='active',  # Abonnement immédiatement actif
-        amount_paid=plan.price  # Enregistrer le montant payé
-    )
+        status='active'
+    ).first()
     
-    # Créer une entrée dans l'historique pour traçabilité
-    SubscriptionHistory.objects.create(
-        subscription=subscription,
-        action='created',  # Action de création
-        new_plan=plan,     # Nouveau plan souscrit
-        notes=f'Abonnement au plan {plan.name}'  # Note descriptive
-    )
+    if request.method == 'POST':
+        # Simulation du traitement de paiement
+        payment_method = request.POST.get('payment_method')
+        card_number = request.POST.get('card_number')
+        
+        if not payment_method or not card_number:
+            messages.error(request, 'Veuillez remplir tous les champs de paiement.')
+        else:
+            # Simulation d'un paiement réussi
+            # Dans un vrai projet, ici on intégrerait Stripe, PayPal, etc.
+            
+            # Annuler l'abonnement existant s'il y en a un
+            if existing_subscription:
+                existing_subscription.status = 'cancelled'
+                existing_subscription.save()
+                
+                SubscriptionHistory.objects.create(
+                    subscription=existing_subscription,
+                    action='cancelled',
+                    old_plan=existing_subscription.plan,
+                    notes='Annulé pour upgrade vers plan premium'
+                )
+            
+            # Créer le nouvel abonnement premium
+            subscription = Subscription.objects.create(
+                user=request.user,
+                plan=plan,
+                status='active',
+                amount_paid=plan.price
+            )
+            
+            # Créer une entrée dans l'historique
+            SubscriptionHistory.objects.create(
+                subscription=subscription,
+                action='created',
+                new_plan=plan,
+                notes=f'Abonnement premium payé - {payment_method}'
+            )
+            
+            messages.success(
+                request,
+                f'Paiement réussi! Vous êtes maintenant abonné au plan {plan.name}.'
+            )
+            return redirect('subscription:my_subscription')
     
-    # Message de confirmation pour l'utilisateur
-    messages.success(
-        request,
-        f'Félicitations! Vous êtes maintenant abonné au plan {plan.name}.'
-    )
+    context = {
+        'plan': plan,
+        'existing_subscription': existing_subscription,
+    }
     
-    # Redirection vers la page de gestion de l'abonnement
-    return redirect('subscription:my_subscription')
+    return render(request, 'subscription/payment.html', context)
 
 
 @login_required
@@ -194,6 +286,7 @@ def change_plan(request, plan_id):
     Cette fonction :
     - Vérifie l'existence d'un abonnement actuel
     - Valide le nouveau plan demandé
+    - Empêche les utilisateurs réguliers de passer d'un plan payant à gratuit
     - Met à jour l'abonnement existant
     - Enregistre l'historique du changement
     - Calcule les différences de prix si nécessaire
@@ -227,6 +320,17 @@ def change_plan(request, plan_id):
         return redirect('subscription:my_subscription')
     
     old_plan = current_subscription.plan
+    
+    # Vérifier si l'utilisateur régulier essaie de passer d'un plan payant à gratuit
+    if not request.user.is_staff:  # Utilisateur régulier (non admin)
+        if old_plan.price > 0 and new_plan.price == 0:  # De payant vers gratuit
+            messages.error(
+                request, 
+                'Vous ne pouvez pas passer directement d\'un abonnement payant vers un abonnement gratuit. '
+                'Votre abonnement payant expirera automatiquement à la fin de sa période. '
+                'Vous pouvez utiliser le bouton "Annuler l\'abonnement" pour passer au plan gratuit.'
+            )
+            return redirect('subscription:my_subscription')
     
     # Mettre à jour l'abonnement
     current_subscription.plan = new_plan
@@ -301,12 +405,12 @@ def my_subscription(request):
 @login_required
 def cancel_subscription(request):
     """
-    Vue pour annuler l'abonnement de l'utilisateur.
+    Vue pour annuler l'abonnement payant et passer au plan gratuit.
     
     Cette fonction :
     - Vérifie que la requête est en POST (sécurité)
     - Trouve l'abonnement actif de l'utilisateur
-    - Appelle la méthode cancel() du modèle
+    - Passe l'utilisateur au plan gratuit (Free)
     - Enregistre l'action dans l'historique
     - Affiche un message de confirmation
     
@@ -320,6 +424,7 @@ def cancel_subscription(request):
         - Utilisateur authentifié (@login_required)
         - Méthode POST pour la sécurité
         - Abonnement actif existant
+        - Plan gratuit existant
     """
     if request.method == 'POST':
         # Récupérer l'abonnement actif de l'utilisateur
@@ -329,22 +434,41 @@ def cancel_subscription(request):
         ).first()
         
         if subscription:
-            # Annuler l'abonnement (change le statut à 'cancelled')
-            subscription.cancel()
-            
-            # Créer une entrée dans l'historique pour traçabilité
-            SubscriptionHistory.objects.create(
-                subscription=subscription,
-                action='cancelled',  # Type d'action
-                old_plan=subscription.plan,  # Plan qui était actif
-                notes='Abonnement annulé par l\'utilisateur'  # Note explicative
-            )
-            
-            # Message de confirmation pour l'utilisateur
-            messages.success(
-                request,
-                'Votre abonnement a été annulé avec succès.'
-            )
+            # Vérifier que c'est un abonnement payant
+            if subscription.plan.price > 0:
+                # Trouver le plan gratuit
+                try:
+                    free_plan = Plan.objects.filter(price=0, is_active=True).first()
+                    if not free_plan:
+                        messages.error(request, 'Aucun plan gratuit disponible.')
+                        return redirect('subscription:my_subscription')
+                    
+                    old_plan = subscription.plan
+                    
+                    # Passer au plan gratuit
+                    subscription.plan = free_plan
+                    subscription.amount_paid = 0
+                    subscription.save()
+                    
+                    # Créer une entrée dans l'historique pour traçabilité
+                    SubscriptionHistory.objects.create(
+                        subscription=subscription,
+                        action='cancelled',  # Type d'action
+                        old_plan=old_plan,  # Plan qui était actif
+                        new_plan=free_plan,  # Nouveau plan gratuit
+                        notes=f'Abonnement payant {old_plan.name} annulé, passage au plan gratuit {free_plan.name}'
+                    )
+                    
+                    # Message de confirmation pour l'utilisateur
+                    messages.success(
+                        request,
+                        f'Votre abonnement {old_plan.name} a été annulé avec succès. '
+                        f'Vous êtes maintenant sur le plan gratuit {free_plan.name}.'
+                    )
+                except Exception as e:
+                    messages.error(request, 'Erreur lors de l\'annulation de l\'abonnement.')
+            else:
+                messages.info(request, 'Vous êtes déjà sur un plan gratuit.')
         else:
             # Aucun abonnement actif trouvé
             messages.error(request, 'Aucun abonnement actif trouvé.')
@@ -638,3 +762,61 @@ def subscription_api(request):
         }
     
     return JsonResponse(data)
+
+
+@login_required
+def test_permissions(request):
+    """
+    Vue de test pour afficher les permissions d'abonnement Premium.
+    
+    Cette vue :
+    - Vérifie que l'utilisateur a un plan Premium actif
+    - Affiche les permissions temporaires de l'utilisateur
+    - Change la couleur de fond en jaune si l'utilisateur a des permissions payantes
+    - Permet de tester visuellement le système de permissions
+    
+    Args:
+        request: Requête HTTP
+    
+    Returns:
+        HttpResponse: Page de test des permissions ou redirection si pas Premium
+    
+    Requires:
+        - Utilisateur authentifié (@login_required)
+        - Plan Premium actif
+    """
+    # Récupérer l'abonnement actuel de l'utilisateur
+    current_subscription = Subscription.objects.filter(
+        user=request.user,
+        status='active'
+    ).first()
+    
+    # Vérifier que l'utilisateur a un plan Premium
+    if not current_subscription or current_subscription.plan.plan_type != 'premium':
+        messages.error(
+            request, 
+            'Accès refusé. Cette fonctionnalité est réservée aux utilisateurs Premium.'
+        )
+        return redirect('subscription:my_subscription')
+    
+    # Récupérer les permissions temporaires actives
+    temporary_permissions = UserTemporaryPermission.objects.filter(
+        user=request.user,
+        is_active=True
+    ).select_related('permission', 'subscription')
+    
+    # Vérifier si l'utilisateur a des permissions payantes actives
+    has_paid_permissions = False
+    if current_subscription and current_subscription.plan.price > 0:
+        has_paid_permissions = temporary_permissions.filter(
+            subscription__plan__price__gt=0
+        ).exists()
+    
+    context = {
+        'current_subscription': current_subscription,
+        'temporary_permissions': temporary_permissions,
+        'has_paid_permissions': has_paid_permissions,
+        'user': request.user,
+    }
+    
+    return render(request, 'subscription/test_permissions.html', context)

@@ -1,0 +1,557 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Gestion des Utilisateurs - SaaS Platform{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+    <!-- En-tête -->
+    <div class="md:flex md:items-center md:justify-between mb-8">
+        <div class="flex-1 min-w-0">
+            <h2 class="text-2xl font-bold leading-7 text-gray-900 sm:text-3xl sm:truncate">
+                Gestion des utilisateurs
+            </h2>
+            <p class="mt-1 text-sm text-gray-500">
+                Gérez les comptes utilisateurs et leurs permissions
+            </p>
+        </div>
+        <div class="mt-4 flex md:mt-0 md:ml-4">
+            <a href="{% url 'dashboard:index' %}" 
+               class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                <i class="fas fa-arrow-left mr-2"></i>
+                Retour au tableau de bord
+            </a>
+        </div>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="mb-4 rounded-md {% if message.tags == 'success' %}bg-green-50 border border-green-200{% else %}bg-red-50 border border-red-200{% endif %} p-4">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        {% if message.tags == 'success' %}
+                            <i class="fas fa-check-circle text-green-400"></i>
+                        {% else %}
+                            <i class="fas fa-exclamation-circle text-red-400"></i>
+                        {% endif %}
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-sm {% if message.tags == 'success' %}text-green-800{% else %}text-red-800{% endif %}">
+                            {{ message }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <!-- Statistiques -->
+    <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 mb-8">
+        <div class="bg-white overflow-hidden shadow rounded-lg">
+            <div class="p-5">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-users text-gray-400 text-2xl"></i>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 truncate">
+                                Total utilisateurs
+                            </dt>
+                            <dd class="text-lg font-medium text-gray-900">
+                                {{ users.count }}
+                            </dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white overflow-hidden shadow rounded-lg">
+            <div class="p-5">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-user-shield text-blue-400 text-2xl"></i>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 truncate">
+                                Administrateurs
+                            </dt>
+                            <dd class="text-lg font-medium text-gray-900">
+                                {{ admin_count }}
+                            </dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white overflow-hidden shadow rounded-lg">
+            <div class="p-5">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-user text-green-400 text-2xl"></i>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 truncate">
+                                Clients
+                            </dt>
+                            <dd class="text-lg font-medium text-gray-900">
+                                {{ client_count }}
+                            </dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white overflow-hidden shadow rounded-lg">
+            <div class="p-5">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-user-check text-yellow-400 text-2xl"></i>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 truncate">
+                                Utilisateurs actifs
+                            </dt>
+                            <dd class="text-lg font-medium text-gray-900">
+                                {{ active_count }}
+                            </dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Liste des utilisateurs -->
+    <div class="bg-white shadow overflow-hidden sm:rounded-md">
+        <div class="px-4 py-5 sm:px-6">
+            <h3 class="text-lg leading-6 font-medium text-gray-900">
+                Liste des utilisateurs
+            </h3>
+            <p class="mt-1 max-w-2xl text-sm text-gray-500">
+                Cliquez sur un utilisateur pour voir ses détails et gérer ses permissions
+            </p>
+        </div>
+        
+        {% if users %}
+            <ul class="divide-y divide-gray-200">
+                {% for user in users %}
+                    <li class="px-4 py-4 sm:px-6 hover:bg-gray-50">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0">
+                                    {% if user.userprofile.avatar %}
+                                        <img class="h-10 w-10 rounded-full" src="{{ user.userprofile.avatar.url }}" alt="{{ user.get_full_name }}">
+                                    {% else %}
+                                        <div class="h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center">
+                                            <i class="fas fa-user text-gray-600"></i>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <div class="ml-4">
+                                    <div class="flex items-center">
+                                        <div class="text-sm font-medium text-gray-900">
+                                            {{ user.get_full_name|default:user.email }}
+                                        </div>
+                                        {% if user.groups.all.0.name == 'admin' %}
+                                            <span class="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                                <i class="fas fa-shield-alt mr-1"></i>
+                                                Admin
+                                            </span>
+                                        {% elif user.groups.all.0.name == 'client' %}
+                                            <span class="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                                <i class="fas fa-user mr-1"></i>
+                                                Client
+                                            </span>
+                                        {% endif %}
+                                        {% if not user.is_active %}
+                                            <span class="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                                <i class="fas fa-ban mr-1"></i>
+                                                Inactif
+                                            </span>
+                                        {% endif %}
+                                    </div>
+                                    <div class="text-sm text-gray-500">
+                                        {{ user.email }}
+                                    </div>
+                                    <div class="text-xs text-gray-400">
+                                        Inscrit le {{ user.date_joined|date:"d/m/Y" }}
+                                        {% if user.last_login %}
+                                            • Dernière connexion : {{ user.last_login|date:"d/m/Y H:i" }}
+                                        {% else %}
+                                            • Jamais connecté
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <!-- Bouton pour changer le statut -->
+                                <button onclick="toggleUserStatus({{ user.id }}, '{{ user.is_active|yesno:'false,true' }}')"
+                                        class="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md {% if user.is_active %}text-red-700 bg-red-100 hover:bg-red-200{% else %}text-green-700 bg-green-100 hover:bg-green-200{% endif %}">
+                                    {% if user.is_active %}
+                                        <i class="fas fa-ban mr-1"></i>
+                                        Désactiver
+                                    {% else %}
+                                        <i class="fas fa-check mr-1"></i>
+                                        Activer
+                                    {% endif %}
+                                </button>
+                                
+                                <!-- Bouton pour changer le type d'utilisateur -->
+                                {% if user.groups.all.0.name == 'client' %}
+                                    <button onclick="changeUserType({{ user.id }}, 'admin')"
+                                            class="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200">
+                                        <i class="fas fa-arrow-up mr-1"></i>
+                                        Promouvoir Admin
+                                    </button>
+                                {% elif user.groups.all.0.name == 'admin' and not user.is_superuser %}
+                                    <button onclick="changeUserType({{ user.id }}, 'client')"
+                                            class="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md text-gray-700 bg-gray-100 hover:bg-gray-200">
+                                        <i class="fas fa-arrow-down mr-1"></i>
+                                        Rétrograder Client
+                                    </button>
+                                {% endif %}
+                                
+                                <!-- Bouton Migration Abonnement -->
+                                <button onclick="openMigrationModal({{ user.id }})"
+                                        class="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md text-green-700 bg-green-100 hover:bg-green-200">
+                                    <i class="fas fa-arrow-up mr-1"></i>
+                                    Migrer vers Payant
+                                </button>
+                                
+                                <!-- Bouton Rétrogradation vers Gratuit -->
+                                <button onclick="openDowngradeModal({{ user.id }})"
+                                        class="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200">
+                                    <i class="fas fa-arrow-down mr-1"></i>
+                                    Rétrograder vers Gratuit
+                                </button>
+                            </div>
+                        </div>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <div class="px-4 py-12 text-center">
+                <i class="fas fa-users text-gray-400 text-4xl mb-4"></i>
+                <h3 class="text-lg font-medium text-gray-900 mb-2">Aucun utilisateur trouvé</h3>
+                <p class="text-gray-500">Il n'y a actuellement aucun utilisateur dans le système.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+function toggleUserStatus(userId, newStatus) {
+    if (confirm('Êtes-vous sûr de vouloir ' + (newStatus === 'true' ? 'activer' : 'désactiver') + ' cet utilisateur ?')) {
+        fetch(`/auth/toggle-user-status/${userId}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'Content-Type': 'application/json',
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Erreur: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Une erreur est survenue');
+        });
+    }
+}
+
+function changeUserType(userId, newType) {
+    const action = newType === 'admin' ? 'promouvoir cet utilisateur en administrateur' : 'rétrograder cet utilisateur en client';
+    if (confirm(`Êtes-vous sûr de vouloir ${action} ?`)) {
+        fetch(`/auth/change-user-type/${userId}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                'user_type': newType
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Erreur: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Une erreur est survenue');
+        });    
+    }
+}
+
+// Fonction pour ouvrir le modal de migration d'abonnement
+function openMigrationModal(userId) {
+    // Récupérer les informations de l'utilisateur et les plans disponibles
+    fetch(`/auth/users/${userId}/migrate-to-paid/`, {
+        method: 'GET',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showMigrationModal(data.user, data.available_plans);
+        } else {
+            alert('Erreur: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Une erreur est survenue lors du chargement des plans');
+    });
+}
+
+// Fonction pour afficher le modal de migration
+function showMigrationModal(user, plans) {
+    const modalHtml = `
+        <div id="migrationModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+            <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+                <div class="mt-3">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-medium text-gray-900">Migrer l'abonnement</h3>
+                        <button onclick="closeMigrationModal()" class="text-gray-400 hover:text-gray-600">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <p class="text-sm text-gray-600">Utilisateur: <strong>${user.name}</strong></p>
+                        <p class="text-sm text-gray-600">Email: <strong>${user.email}</strong></p>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Sélectionner un plan:</label>
+                        <select id="planSelect" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">-- Choisir un plan --</option>
+                            ${plans.map(plan => `
+                                <option value="${plan.id}">
+                                    ${plan.name} - ${plan.price}€/${plan.billing_cycle}
+                                </option>
+                            `).join('')}
+                        </select>
+                    </div>
+                    
+                    <div id="planDescription" class="mb-4 text-sm text-gray-600 hidden">
+                        <!-- Description du plan sélectionné -->
+                    </div>
+                    
+                    <div class="flex justify-end space-x-3">
+                        <button onclick="closeMigrationModal()" 
+                                class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400">
+                            Annuler
+                        </button>
+                        <button onclick="confirmMigration(${user.id})" 
+                                class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                            Confirmer la migration
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    
+    // Ajouter l'événement pour afficher la description du plan
+    document.getElementById('planSelect').addEventListener('change', function() {
+        const selectedPlanId = this.value;
+        const selectedPlan = plans.find(plan => plan.id == selectedPlanId);
+        const descriptionDiv = document.getElementById('planDescription');
+        
+        if (selectedPlan && selectedPlan.description) {
+            descriptionDiv.innerHTML = selectedPlan.description;
+            descriptionDiv.classList.remove('hidden');
+        } else {
+            descriptionDiv.classList.add('hidden');
+        }
+    });
+}
+
+// Fonction pour fermer le modal
+function closeMigrationModal() {
+    const modal = document.getElementById('migrationModal');
+    if (modal) {
+        modal.remove();
+    }
+}
+
+// Fonction pour confirmer la migration
+function confirmMigration(userId) {
+    const planId = document.getElementById('planSelect').value;
+    
+    if (!planId) {
+        alert('Veuillez sélectionner un plan');
+        return;
+    }
+    
+    if (!confirm('Êtes-vous sûr de vouloir migrer cet utilisateur vers ce plan payant?')) {
+        return;
+    }
+    
+    fetch(`/auth/users/${userId}/migrate-to-paid/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            plan_id: planId
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Migration réussie: ' + data.message);
+            closeMigrationModal();
+            location.reload();
+        } else {
+            alert('Erreur: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Une erreur est survenue lors de la migration');
+     });
+ }
+ 
+ // Fonction pour ouvrir le modal de rétrogradation vers gratuit
+ function openDowngradeModal(userId) {
+     // Récupérer les informations de l'utilisateur et son abonnement actuel
+     fetch(`/auth/users/${userId}/migrate-to-free/`, {
+         method: 'GET',
+         headers: {
+             'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+             'Content-Type': 'application/json'
+         }
+     })
+     .then(response => response.json())
+     .then(data => {
+         if (data.success) {
+             showDowngradeModal(data.user, data.current_plan);
+         } else {
+             alert('Erreur: ' + data.message);
+         }
+     })
+     .catch(error => {
+         console.error('Error:', error);
+         alert('Une erreur est survenue lors du chargement des informations');
+     });
+ }
+ 
+ // Fonction pour afficher le modal de rétrogradation
+ function showDowngradeModal(user, currentPlan) {
+     const modalHtml = `
+         <div id="downgradeModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+             <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+                 <div class="mt-3">
+                     <div class="flex items-center justify-between mb-4">
+                         <h3 class="text-lg font-medium text-gray-900">Rétrograder vers Gratuit</h3>
+                         <button onclick="closeDowngradeModal()" class="text-gray-400 hover:text-gray-600">
+                             <i class="fas fa-times"></i>
+                         </button>
+                     </div>
+                     
+                     <div class="mb-4">
+                         <p class="text-sm text-gray-600">Utilisateur: <strong>${user.name}</strong></p>
+                         <p class="text-sm text-gray-600">Email: <strong>${user.email}</strong></p>
+                     </div>
+                     
+                     <div class="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-md">
+                         <div class="flex">
+                             <div class="flex-shrink-0">
+                                 <i class="fas fa-exclamation-triangle text-yellow-400"></i>
+                             </div>
+                             <div class="ml-3">
+                                 <h3 class="text-sm font-medium text-yellow-800">Attention</h3>
+                                 <div class="mt-2 text-sm text-yellow-700">
+                                     <p>Cette action va :</p>
+                                     <ul class="list-disc list-inside mt-1">
+                                         <li>Annuler l'abonnement actuel: <strong>${currentPlan.name}</strong> (${currentPlan.price}€/${currentPlan.billing_cycle})</li>
+                                         <li>Créer un nouvel abonnement gratuit</li>
+                                         <li>Limiter l'accès aux fonctionnalités premium</li>
+                                     </ul>
+                                 </div>
+                             </div>
+                         </div>
+                     </div>
+                     
+                     <div class="flex justify-end space-x-3">
+                         <button onclick="closeDowngradeModal()" 
+                                 class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400">
+                             Annuler
+                         </button>
+                         <button onclick="confirmDowngrade(${user.id})" 
+                                 class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">
+                             Confirmer la rétrogradation
+                         </button>
+                     </div>
+                 </div>
+             </div>
+         </div>
+     `;
+     
+     document.body.insertAdjacentHTML('beforeend', modalHtml);
+ }
+ 
+ // Fonction pour fermer le modal de rétrogradation
+ function closeDowngradeModal() {
+     const modal = document.getElementById('downgradeModal');
+     if (modal) {
+         modal.remove();
+     }
+ }
+ 
+ // Fonction pour confirmer la rétrogradation
+ function confirmDowngrade(userId) {
+     if (!confirm('Êtes-vous absolument sûr de vouloir rétrograder cet utilisateur vers un abonnement gratuit? Cette action annulera son abonnement payant actuel.')) {
+         return;
+     }
+     
+     fetch(`/auth/users/${userId}/migrate-to-free/`, {
+         method: 'POST',
+         headers: {
+             'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+             'Content-Type': 'application/json'
+         }
+     })
+     .then(response => response.json())
+     .then(data => {
+         if (data.success) {
+             alert('Rétrogradation réussie: ' + data.message);
+             closeDowngradeModal();
+             location.reload();
+         } else {
+             alert('Erreur: ' + data.message);
+         }
+     })
+     .catch(error => {
+         console.error('Error:', error);
+         alert('Une erreur est survenue lors de la rétrogradation');
+     });
+ }
+ </script>
+
+{% csrf_token %}
+{% endblock %}

@@ -205,7 +205,7 @@ class UserProfileForm(forms.ModelForm):
         # Champs modifiables du profil
         fields = [
             'bio', 'location', 'birth_date', 'website',
-            'email_notifications', 'newsletter'
+            'email_notifications'
         ]
         # Personnalisation des widgets pour chaque champ
         widgets = {
@@ -232,9 +232,6 @@ class UserProfileForm(forms.ModelForm):
             }),
             # Cases à cocher pour les préférences
             'email_notifications': forms.CheckboxInput(attrs={
-                'class': 'form-check-input'
-            }),
-            'newsletter': forms.CheckboxInput(attrs={
                 'class': 'form-check-input'
             }),
         }
@@ -291,3 +288,77 @@ class CustomUserUpdateForm(forms.ModelForm):
             if len(phone) < 10:
                 raise forms.ValidationError('Le numéro de téléphone doit contenir au moins 10 chiffres.')
         return phone
+
+
+class PasswordResetRequestForm(forms.Form):
+    """
+    Formulaire pour demander la réinitialisation du mot de passe.
+    L'utilisateur saisit son email pour recevoir un lien de réinitialisation.
+    """
+    email = forms.EmailField(
+        label='Adresse email',
+        max_length=254,
+        widget=forms.EmailInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Entrez votre adresse email',
+            'autofocus': True
+        })
+    )
+    
+    def clean_email(self):
+        email = self.cleaned_data.get('email')
+        if not CustomUser.objects.filter(email=email).exists():
+            raise forms.ValidationError(
+                "Aucun compte n'est associé à cette adresse email."
+            )
+        return email
+
+
+class PasswordResetConfirmForm(forms.Form):
+    """
+    Formulaire pour définir un nouveau mot de passe après avoir cliqué
+    sur le lien de réinitialisation reçu par email.
+    """
+    new_password1 = forms.CharField(
+        label='Nouveau mot de passe',
+        widget=forms.PasswordInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Nouveau mot de passe'
+        }),
+        min_length=8,
+        help_text='Votre mot de passe doit contenir au moins 8 caractères.'
+    )
+    
+    new_password2 = forms.CharField(
+        label='Confirmer le nouveau mot de passe',
+        widget=forms.PasswordInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Confirmer le nouveau mot de passe'
+        })
+    )
+    
+    def clean_new_password2(self):
+        password1 = self.cleaned_data.get('new_password1')
+        password2 = self.cleaned_data.get('new_password2')
+        
+        if password1 and password2 and password1 != password2:
+            raise forms.ValidationError(
+                "Les deux mots de passe ne correspondent pas."
+            )
+        return password2
+    
+    def clean_new_password1(self):
+        password = self.cleaned_data.get('new_password1')
+        
+        # Validation basique du mot de passe
+        if len(password) < 8:
+            raise forms.ValidationError(
+                "Le mot de passe doit contenir au moins 8 caractères."
+            )
+        
+        if password.isdigit():
+            raise forms.ValidationError(
+                "Le mot de passe ne peut pas être entièrement numérique."
+            )
+        
+        return password

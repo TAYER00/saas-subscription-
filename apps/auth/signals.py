@@ -17,6 +17,18 @@ def create_user_profile(sender, instance, created, **kwargs):
         elif instance.user_type == 'client':
             client_group, _ = Group.objects.get_or_create(name='client')
             instance.groups.add(client_group)
+        
+        # Assigner automatiquement le plan gratuit à tous les nouveaux utilisateurs
+        from apps.subscription.models import Plan, Subscription
+        try:
+            free_plan = Plan.objects.get(slug='gratuit')
+            Subscription.objects.create(
+                user=instance,
+                plan=free_plan,
+                status='active'
+            )
+        except Plan.DoesNotExist:
+            pass  # Le plan gratuit n'existe pas encore
 
 
 @receiver(post_save, sender=CustomUser)

@@ -1,0 +1,259 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Paiement - {{ plan.name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .payment-container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+    
+    .plan-summary {
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 30px;
+    }
+    
+    .payment-form {
+        background: white;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 30px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .form-group {
+        margin-bottom: 20px;
+    }
+    
+    .form-control {
+        border-radius: 6px;
+        border: 1px solid #ced4da;
+        padding: 12px 15px;
+        font-size: 16px;
+    }
+    
+    .btn-payment {
+        background: #28a745;
+        color: white;
+        border: none;
+        padding: 15px 30px;
+        border-radius: 6px;
+        font-size: 18px;
+        font-weight: 600;
+        width: 100%;
+        cursor: pointer;
+        transition: background-color 0.3s;
+    }
+    
+    .btn-payment:hover {
+        background: #218838;
+    }
+    
+    .security-info {
+        background: #e7f3ff;
+        border: 1px solid #b3d9ff;
+        border-radius: 6px;
+        padding: 15px;
+        margin-bottom: 20px;
+        font-size: 14px;
+    }
+    
+    .price-highlight {
+        font-size: 24px;
+        font-weight: bold;
+        color: #28a745;
+    }
+    
+    .feature-list {
+        list-style: none;
+        padding: 0;
+    }
+    
+    .feature-list li {
+        padding: 5px 0;
+        border-bottom: 1px solid #eee;
+    }
+    
+    .feature-list li:before {
+        content: "✓";
+        color: #28a745;
+        font-weight: bold;
+        margin-right: 10px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="payment-container">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="mb-4">
+                <i class="fas fa-credit-card"></i>
+                Paiement sécurisé
+            </h1>
+        </div>
+    </div>
+    
+    <div class="row">
+        <!-- Résumé du plan -->
+        <div class="col-md-5">
+            <div class="plan-summary">
+                <h3>{{ plan.name }}</h3>
+                <p class="text-muted">{{ plan.description }}</p>
+                
+                <div class="price-highlight mb-3">
+                    {{ plan.price }}€
+                    {% if plan.billing_cycle == 'monthly' %}
+                        /mois
+                    {% elif plan.billing_cycle == 'yearly' %}
+                        /an
+                    {% endif %}
+                </div>
+                
+                <h5>Fonctionnalités incluses :</h5>
+                <ul class="feature-list">
+                    <li>{{ plan.max_users }} utilisateur{{ plan.max_users|pluralize }}</li>
+                    <li>{{ plan.max_projects }} projet{{ plan.max_projects|pluralize }}</li>
+                    <li>{{ plan.storage_limit }}GB de stockage</li>
+                    {% if plan.api_access %}
+                        <li>Accès API</li>
+                    {% endif %}
+                    {% if plan.priority_support %}
+                        <li>Support prioritaire</li>
+                    {% endif %}
+                    {% if plan.analytics %}
+                        <li>Analyses avancées</li>
+                    {% endif %}
+                    {% if plan.custom_branding %}
+                        <li>Personnalisation de marque</li>
+                    {% endif %}
+                </ul>
+                
+                {% if existing_subscription %}
+                    <div class="alert alert-info mt-3">
+                        <small>
+                            <i class="fas fa-info-circle"></i>
+                            Votre abonnement actuel ({{ existing_subscription.plan.name }}) sera automatiquement annulé.
+                        </small>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Formulaire de paiement -->
+        <div class="col-md-7">
+            <div class="payment-form">
+                <h4 class="mb-4">Informations de paiement</h4>
+                
+                <div class="security-info">
+                    <i class="fas fa-shield-alt"></i>
+                    <strong>Paiement 100% sécurisé</strong><br>
+                    Vos informations de paiement sont protégées par un cryptage SSL de niveau bancaire.
+                </div>
+                
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="form-group">
+                        <label for="payment_method">Méthode de paiement</label>
+                        <select class="form-control" id="payment_method" name="payment_method" required>
+                            <option value="">Choisir une méthode</option>
+                            <option value="credit_card">Carte de crédit</option>
+                            <option value="debit_card">Carte de débit</option>
+                            <option value="paypal">PayPal</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="card_number">Numéro de carte</label>
+                        <input type="text" class="form-control" id="card_number" name="card_number" 
+                               placeholder="1234 5678 9012 3456" maxlength="19" required>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="expiry_date">Date d'expiration</label>
+                                <input type="text" class="form-control" id="expiry_date" name="expiry_date" 
+                                       placeholder="MM/AA" maxlength="5" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="cvv">CVV</label>
+                                <input type="text" class="form-control" id="cvv" name="cvv" 
+                                       placeholder="123" maxlength="4" required>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="cardholder_name">Nom du titulaire</label>
+                        <input type="text" class="form-control" id="cardholder_name" name="cardholder_name" 
+                               placeholder="Nom complet" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="terms" required>
+                            <label class="form-check-label" for="terms">
+                                J'accepte les <a href="#" target="_blank">conditions d'utilisation</a> et la <a href="#" target="_blank">politique de confidentialité</a>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn-payment">
+                        <i class="fas fa-lock"></i>
+                        Payer {{ plan.price }}€ maintenant
+                    </button>
+                </form>
+                
+                <div class="text-center mt-3">
+                    <small class="text-muted">
+                        <i class="fas fa-undo"></i>
+                        Vous pouvez annuler votre abonnement à tout moment
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row mt-4">
+        <div class="col-12 text-center">
+            <a href="{% url 'subscription:plans' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i>
+                Retour aux plans
+            </a>
+        </div>
+    </div>
+</div>
+
+<script>
+// Formatage automatique du numéro de carte
+document.getElementById('card_number').addEventListener('input', function(e) {
+    let value = e.target.value.replace(/\s+/g, '').replace(/[^0-9]/gi, '');
+    let formattedValue = value.match(/.{1,4}/g)?.join(' ') || value;
+    e.target.value = formattedValue;
+});
+
+// Formatage de la date d'expiration
+document.getElementById('expiry_date').addEventListener('input', function(e) {
+    let value = e.target.value.replace(/\D/g, '');
+    if (value.length >= 2) {
+        value = value.substring(0, 2) + '/' + value.substring(2, 4);
+    }
+    e.target.value = value;
+});
+
+// Validation CVV
+document.getElementById('cvv').addEventListener('input', function(e) {
+    e.target.value = e.target.value.replace(/\D/g, '');
+});
+</script>
+{% endblock %}

@@ -1,0 +1,623 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Mon Abonnement - {{ block.super }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .subscription-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 2rem;
+    }
+    
+    .subscription-card {
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        margin-bottom: 2rem;
+    }
+    
+    .subscription-header {
+        background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+        color: white;
+        padding: 2rem;
+        text-align: center;
+    }
+    
+    .subscription-title {
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+    
+    .subscription-status {
+        display: inline-flex;
+        align-items: center;
+        background: rgba(255, 255, 255, 0.2);
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-size: 0.875rem;
+        font-weight: 600;
+        margin-top: 1rem;
+    }
+    
+    .subscription-body {
+        padding: 2rem;
+    }
+    
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .info-item {
+        background: #f8fafc;
+        padding: 1.5rem;
+        border-radius: 12px;
+        border-left: 4px solid #3b82f6;
+    }
+    
+    .info-label {
+        font-size: 0.875rem;
+        color: #6b7280;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 0.5rem;
+    }
+    
+    .info-value {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #1f2937;
+    }
+    
+    .permissions-section {
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        margin-bottom: 2rem;
+    }
+    
+    .permissions-header {
+        background: linear-gradient(135deg, #10b981, #059669);
+        color: white;
+        padding: 1.5rem 2rem;
+        border-radius: 16px 16px 0 0;
+    }
+    
+    .permissions-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        margin: 0;
+    }
+    
+    .permissions-body {
+        padding: 2rem;
+    }
+    
+    .permission-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1rem;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        margin-bottom: 1rem;
+        transition: all 0.3s ease;
+    }
+    
+    .permission-item:hover {
+        background: #f9fafb;
+        border-color: #3b82f6;
+    }
+    
+    .permission-info {
+        display: flex;
+        align-items: center;
+        flex: 1;
+    }
+    
+    .permission-icon {
+        width: 40px;
+        height: 40px;
+        background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        margin-right: 1rem;
+        font-size: 1.2rem;
+    }
+    
+    .permission-details {
+        flex: 1;
+    }
+    
+    .permission-name {
+        font-weight: 600;
+        color: #1f2937;
+        margin-bottom: 0.25rem;
+    }
+    
+    .permission-description {
+        font-size: 0.875rem;
+        color: #6b7280;
+    }
+    
+    .permission-status {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 0.5rem;
+    }
+    
+    .status-badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .status-active {
+        background: #dcfce7;
+        color: #166534;
+    }
+    
+    .status-expired {
+        background: #fee2e2;
+        color: #991b1b;
+    }
+    
+    .status-expiring {
+        background: #fef3c7;
+        color: #92400e;
+    }
+    
+    .expiry-time {
+        font-size: 0.75rem;
+        color: #6b7280;
+        text-align: right;
+    }
+    
+    .action-buttons {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        margin-top: 2rem;
+        flex-wrap: wrap;
+    }
+    
+    .btn {
+        padding: 0.75rem 1.5rem;
+        border-radius: 8px;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        border: none;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .btn-primary {
+        background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+        color: white;
+    }
+    
+    .btn-primary:hover {
+        background: linear-gradient(135deg, #1d4ed8, #1e40af);
+        transform: translateY(-2px);
+    }
+    
+    .btn-success {
+        background: linear-gradient(135deg, #10b981, #059669);
+        color: white;
+    }
+    
+    .btn-success:hover {
+        background: linear-gradient(135deg, #059669, #047857);
+        transform: translateY(-2px);
+    }
+    
+    .btn-warning {
+        background: linear-gradient(135deg, #f59e0b, #d97706);
+        color: white;
+    }
+    
+    .btn-warning:hover {
+        background: linear-gradient(135deg, #d97706, #b45309);
+        transform: translateY(-2px);
+    }
+    
+    .btn-secondary {
+        background: #6b7280;
+        color: white;
+    }
+    
+    .btn-secondary:hover {
+        background: #4b5563;
+        transform: translateY(-2px);
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 3rem;
+        color: #6b7280;
+    }
+    
+    .empty-state i {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+        opacity: 0.5;
+    }
+    
+    .countdown-timer {
+        background: linear-gradient(135deg, #fef3c7, #fde68a);
+        border: 1px solid #f59e0b;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 2rem;
+        text-align: center;
+    }
+    
+    .countdown-title {
+        font-weight: 600;
+        color: #92400e;
+        margin-bottom: 0.5rem;
+    }
+    
+    .countdown-time {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #d97706;
+    }
+    
+    @media (max-width: 768px) {
+        .subscription-container {
+            padding: 1rem;
+        }
+        
+        .info-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .permission-item {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 1rem;
+        }
+        
+        .permission-status {
+            align-items: flex-start;
+            width: 100%;
+        }
+        
+        .action-buttons {
+            flex-direction: column;
+        }
+        
+        .btn {
+            justify-content: center;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="subscription-container">
+    <!-- En-tête de page -->
+    <div class="text-center mb-8">
+        <h1 class="text-4xl font-bold text-gray-900 mb-4">
+            Mon Abonnement
+        </h1>
+        <p class="text-xl text-gray-600">
+            Gérez votre abonnement et vos permissions
+        </p>
+    </div>
+    
+    <!-- Carte d'abonnement principal -->
+    <div class="subscription-card">
+        <div class="subscription-header">
+            <h2 class="subscription-title">
+                {% if current_subscription %}
+                    {{ current_subscription.plan.name }}
+                {% else %}
+                    Plan Gratuit
+                {% endif %}
+            </h2>
+            <div class="subscription-status">
+                <i class="fas fa-circle mr-2"></i>
+                {% if current_subscription %}
+                    {% if current_subscription.is_active %}
+                        Actif
+                    {% else %}
+                        Inactif
+                    {% endif %}
+                {% else %}
+                    Gratuit
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="subscription-body">
+            <div class="info-grid">
+                <div class="info-item">
+                    <div class="info-label">
+                        <i class="fas fa-calendar-alt mr-2"></i>
+                        Date de début
+                    </div>
+                    <div class="info-value">
+                        {% if current_subscription %}
+                            {{ current_subscription.start_date|date:"d M Y" }}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="info-item">
+                    <div class="info-label">
+                        <i class="fas fa-calendar-check mr-2"></i>
+                        Date d'expiration
+                    </div>
+                    <div class="info-value">
+                        {% if current_subscription %}
+                            {{ current_subscription.end_date|date:"d M Y" }}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="info-item">
+                    <div class="info-label">
+                        <i class="fas fa-euro-sign mr-2"></i>
+                        Prix mensuel
+                    </div>
+                    <div class="info-value">
+                        {% if current_subscription %}
+                            €{{ current_subscription.plan.price }}
+                        {% else %}
+                            Gratuit
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="info-item">
+                    <div class="info-label">
+                        <i class="fas fa-clock mr-2"></i>
+                        Temps restant
+                    </div>
+                    <div class="info-value">
+                        {% if current_subscription and current_subscription.is_active %}
+                            {{ current_subscription.days_remaining }} jours
+                        {% else %}
+                            -
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Compte à rebours pour l'expiration -->
+    {% if current_subscription and current_subscription.is_active and current_subscription.days_remaining <= 7 %}
+    <div class="countdown-timer">
+        <div class="countdown-title">
+            <i class="fas fa-exclamation-triangle mr-2"></i>
+            Votre abonnement expire bientôt !
+        </div>
+        <div class="countdown-time" id="countdown">
+            {{ current_subscription.days_remaining }} jour(s) restant(s)
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Section des permissions temporaires -->
+    <div class="permissions-section">
+        <div class="permissions-header">
+            <h3 class="permissions-title">
+                <i class="fas fa-key mr-2"></i>
+                Permissions Temporaires
+            </h3>
+        </div>
+        
+        <div class="permissions-body">
+            {% if active_permissions %}
+                {% for permission in active_permissions %}
+                <div class="permission-item">
+                    <div class="permission-info">
+                        <div class="permission-icon">
+                            <i class="fas fa-shield-alt"></i>
+                        </div>
+                        <div class="permission-details">
+                            <div class="permission-name">
+                                {{ permission.permission.name }}
+                            </div>
+                            <div class="permission-description">
+                                {{ permission.permission.content_type.model|title }} - 
+                                {{ permission.permission.codename }}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="permission-status">
+                        {% if permission.is_expired %}
+                            <span class="status-badge status-expired">
+                                <i class="fas fa-times-circle mr-1"></i>
+                                Expiré
+                            </span>
+                        {% elif permission.expires_in_hours <= 24 %}
+                            <span class="status-badge status-expiring">
+                                <i class="fas fa-exclamation-triangle mr-1"></i>
+                                Expire bientôt
+                            </span>
+                        {% else %}
+                            <span class="status-badge status-active">
+                                <i class="fas fa-check-circle mr-1"></i>
+                                Actif
+                            </span>
+                        {% endif %}
+                        
+                        <div class="expiry-time">
+                            {% if not permission.is_expired %}
+                                Expire le {{ permission.expires_at|date:"d M Y à H:i" }}
+                            {% else %}
+                                Expiré le {{ permission.expires_at|date:"d M Y à H:i" }}
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="empty-state">
+                    <i class="fas fa-lock"></i>
+                    <h4>Aucune permission temporaire</h4>
+                    <p>Vous n'avez actuellement aucune permission temporaire active.</p>
+                    {% if not current_subscription %}
+                    <p class="mt-2">
+                        <a href="{% url 'subscription:select_plan' %}" class="text-blue-600 hover:text-blue-800">
+                            Passez à un plan premium pour débloquer des fonctionnalités avancées
+                        </a>
+                    </p>
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Boutons d'action -->
+    <div class="action-buttons">
+        {% if not current_subscription %}
+            <a href="{% url 'subscription:select_plan' %}" class="btn btn-primary">
+                <i class="fas fa-rocket"></i>
+                Passer au Premium
+            </a>
+        {% else %}
+            {% if current_subscription.is_active %}
+                <a href="{% url 'subscription:renew_subscription' %}" class="btn btn-success">
+                    <i class="fas fa-sync-alt"></i>
+                    Renouveler l'abonnement
+                </a>
+                <a href="{% url 'subscription:select_plan' %}" class="btn btn-warning">
+                    <i class="fas fa-exchange-alt"></i>
+                    Changer de plan
+                </a>
+            {% else %}
+                <a href="{% url 'subscription:select_plan' %}" class="btn btn-primary">
+                    <i class="fas fa-play"></i>
+                    Réactiver l'abonnement
+                </a>
+            {% endif %}
+        {% endif %}
+        
+        <a href="{% url 'dashboard' %}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i>
+            Retour au tableau de bord
+        </a>
+    </div>
+</div>
+
+<!-- Modal de renouvellement rapide -->
+<div id="renewModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-lg p-8 max-w-md mx-4">
+        <div class="text-center">
+            <i class="fas fa-sync-alt text-6xl text-green-500 mb-4"></i>
+            <h3 class="text-xl font-semibold mb-4">Renouvellement rapide</h3>
+            <p class="text-gray-600 mb-6">
+                Renouveler votre abonnement actuel pour 30 jours supplémentaires ?
+            </p>
+            <div class="flex gap-4 justify-center">
+                <button type="button" id="cancelRenew" 
+                        class="px-6 py-2 bg-gray-500 text-white rounded hover:bg-gray-600">
+                    Annuler
+                </button>
+                <form method="post" action="{% url 'subscription:renew_subscription' %}" class="inline">
+                    {% csrf_token %}
+                    <button type="submit" 
+                            class="px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700">
+                        Confirmer
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Gestion du modal de renouvellement
+    const renewModal = document.getElementById('renewModal');
+    const renewLinks = document.querySelectorAll('a[href*="renew_subscription"]');
+    const cancelRenew = document.getElementById('cancelRenew');
+    
+    renewLinks.forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            renewModal.classList.remove('hidden');
+            renewModal.classList.add('flex');
+        });
+    });
+    
+    cancelRenew.addEventListener('click', function() {
+        renewModal.classList.add('hidden');
+        renewModal.classList.remove('flex');
+    });
+    
+    // Fermer le modal en cliquant à l'extérieur
+    renewModal.addEventListener('click', function(e) {
+        if (e.target === this) {
+            this.classList.add('hidden');
+            this.classList.remove('flex');
+        }
+    });
+    
+    // Mise à jour automatique du compte à rebours
+    const countdownElement = document.getElementById('countdown');
+    if (countdownElement) {
+        function updateCountdown() {
+            // Cette fonction pourrait être étendue pour un vrai compte à rebours en temps réel
+            // Pour l'instant, elle affiche juste les jours restants
+        }
+        
+        // Mettre à jour toutes les minutes
+        setInterval(updateCountdown, 60000);
+    }
+    
+    // Animation des cartes de permissions
+    const permissionItems = document.querySelectorAll('.permission-item');
+    permissionItems.forEach((item, index) => {
+        item.style.animationDelay = `${index * 0.1}s`;
+        item.classList.add('animate-fade-in');
+    });
+});
+</script>
+
+<style>
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.animate-fade-in {
+    animation: fadeIn 0.5s ease-out forwards;
+}
+</style>
+{% endblock %}

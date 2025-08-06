@@ -285,3 +285,96 @@ class UserProfile(models.Model):
             self.birth_date,
             self.website.strip()
         ])
+
+
+class PasswordResetToken(models.Model):
+    """
+    Modèle pour gérer les tokens de réinitialisation de mot de passe.
+    
+    Chaque token est unique et a une durée de vie limitée (24h par défaut).
+    Après utilisation ou expiration, le token devient invalide.
+    """
+    
+    user = models.ForeignKey(
+        CustomUser,
+        on_delete=models.CASCADE,
+        related_name='password_reset_tokens',
+        verbose_name='Utilisateur'
+    )
+    
+    token = models.CharField(
+        'Token',
+        max_length=100,
+        unique=True,
+        help_text='Token unique pour la réinitialisation'
+    )
+    
+    created_at = models.DateTimeField(
+        'Créé le',
+        auto_now_add=True
+    )
+    
+    expires_at = models.DateTimeField(
+        'Expire le',
+        help_text='Date et heure d\'expiration du token'
+    )
+    
+    used = models.BooleanField(
+        'Utilisé',
+        default=False,
+        help_text='Indique si le token a déjà été utilisé'
+    )
+    
+    class Meta:
+        verbose_name = 'Token de réinitialisation'
+        verbose_name_plural = 'Tokens de réinitialisation'
+        db_table = 'auth_password_reset_token'
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"Token pour {self.user.email} - {self.created_at.strftime('%d/%m/%Y %H:%M')}"
+    
+    def is_valid(self):
+        """
+        Vérifie si le token est encore valide.
+        
+        Returns:
+            bool: True si le token n'est pas utilisé et n'a pas expiré
+        """
+        from django.utils import timezone
+        return not self.used and self.expires_at > timezone.now()
+    
+    def mark_as_used(self):
+        """
+        Marque le token comme utilisé pour empêcher sa réutilisation.
+        """
+        self.used = True
+        self.save()
+    
+    @classmethod
+    def create_token(cls, user):
+        """
+        Crée un nouveau token de réinitialisation pour un utilisateur.
+        
+        Args:
+            user (CustomUser): L'utilisateur pour qui créer le token
+            
+        Returns:
+            PasswordResetToken: Le token créé
+        """
+        import secrets
+        from django.utils import timezone
+        from datetime import timedelta
+        
+        # Invalider tous les anciens tokens de cet utilisateur
+        cls.objects.filter(user=user, used=False).update(used=True)
+        
+        # Créer un nouveau token
+        token = secrets.token_urlsafe(32)
+        expires_at = timezone.now() + timedelta(hours=24)  # Expire dans 24h
+        
+        return cls.objects.create(
+            user=user,
+            token=token,
+            expires_at=expires_at
+        )

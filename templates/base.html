@@ -45,12 +45,37 @@
             @apply text-xl font-bold text-white;
         }
         
-        .dropdown:hover .dropdown-menu {
-            @apply block;
+        /* Dropdown styles - Responsive */
+        @media (min-width: 768px) {
+            .dropdown:hover .dropdown-menu {
+                @apply block;
+            }
         }
         
         .dropdown-menu {
-            @apply hidden absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50;
+            @apply absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 opacity-0 invisible transform scale-95 transition-all duration-200;
+        }
+        
+        .dropdown-menu.show {
+            @apply opacity-100 visible transform scale-100;
+        }
+        
+        /* Mobile dropdown styles */
+        @media (max-width: 767px) {
+            .dropdown-menu {
+                position: static !important;
+                transform: none !important;
+                box-shadow: none;
+                border: none;
+                background: rgba(59, 130, 246, 0.1);
+                margin-top: 0.5rem;
+                border-radius: 0.5rem;
+                width: 100%;
+            }
+            
+            .dropdown-menu.show {
+                display: block;
+            }
         }
         
         .alert {
@@ -67,6 +92,50 @@
         }
         .alert-info {
             @apply bg-blue-100 border border-blue-400 text-blue-700;
+        }
+        
+        /* Mobile menu animations */
+        .mobile-menu-slide {
+            transition: all 0.3s ease-in-out;
+            max-height: 0;
+            overflow: hidden;
+        }
+        
+        .mobile-menu-slide.show {
+            max-height: 500px;
+        }
+        
+        /* Responsive navigation improvements */
+        @media (max-width: 640px) {
+            .navbar-brand {
+                @apply text-lg;
+            }
+            
+            .mobile-menu-item {
+                padding: 0.75rem 1rem;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            }
+            
+            .mobile-menu-item:last-child {
+                border-bottom: none;
+            }
+        }
+        
+        /* Touch-friendly buttons on mobile */
+        @media (max-width: 768px) {
+            .mobile-menu-button {
+                min-height: 44px;
+                min-width: 44px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            
+            .dropdown-toggle {
+                min-height: 44px;
+                display: flex;
+                align-items: center;
+            }
         }
     </style>
     
@@ -92,24 +161,59 @@
                         
                         {% if user.is_admin %}
                         <div class="relative dropdown">
-                            <button class="text-white hover:text-gray-200 px-3 py-2 rounded-md text-sm font-medium flex items-center">
-                                <i class="fas fa-cog mr-1"></i> Administration
-                                <i class="fas fa-chevron-down ml-1 text-xs"></i>
+                            <button class="admin-menu-btn dropdown-toggle bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-4 py-2 rounded-lg shadow-lg transition-all duration-200 flex items-center space-x-2" id="admin-menu-button" aria-expanded="false" aria-haspopup="true">
+                                <div class="flex items-center space-x-2">
+                                    <div class="w-8 h-8 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                                        <i class="fas fa-cog text-sm"></i>
+                                    </div>
+                                    <span class="font-medium">Administration</span>
+                                    <i class="fas fa-chevron-down text-xs transition-transform duration-200" id="admin-chevron"></i>
+                                </div>
                             </button>
-                            <div class="dropdown-menu">
-                                <a href="{% url 'auth:user_list' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                    <i class="fas fa-users mr-2"></i> Utilisateurs
-                                </a>
-                                <a href="{% url 'subscription:admin_subscriptions' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                    <i class="fas fa-credit-card mr-2"></i> Abonnements
-                                </a>
-                                <a href="{% url 'subscription:admin_plans' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                    <i class="fas fa-list mr-2"></i> Plans
-                                </a>
-                                <div class="border-t border-gray-100"></div>
-                                <a href="/admin/" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                    <i class="fas fa-tools mr-2"></i> Admin Django
-                                </a>
+                            <div class="admin-dropdown origin-top-right absolute right-0 mt-3 w-64 rounded-xl shadow-2xl bg-white ring-1 ring-black ring-opacity-5 focus:outline-none dropdown-menu overflow-hidden opacity-0 invisible transform scale-95 transition-all duration-200">
+                                <div class="bg-gradient-to-r from-blue-50 to-indigo-50 px-4 py-3 border-b border-gray-100">
+                                    <h3 class="text-sm font-semibold text-gray-900">Panneau d'Administration</h3>
+                                    <p class="text-xs text-gray-600 mt-1">Gérez votre plateforme</p>
+                                </div>
+                                <div class="py-2">
+                                    <a href="{% url 'auth:user_list' %}" class="admin-menu-item group flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition-colors duration-150">
+                                        <div class="w-8 h-8 bg-blue-100 group-hover:bg-blue-200 rounded-lg flex items-center justify-center mr-3 transition-colors duration-150">
+                                            <i class="fas fa-users text-blue-600 text-xs"></i>
+                                        </div>
+                                        <div>
+                                            <div class="font-medium">Utilisateurs</div>
+                                            <div class="text-xs text-gray-500">Gérer les comptes utilisateurs</div>
+                                        </div>
+                                    </a>
+                                    <a href="{% url 'subscription:admin_subscriptions' %}" class="admin-menu-item group flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700 transition-colors duration-150">
+                                        <div class="w-8 h-8 bg-green-100 group-hover:bg-green-200 rounded-lg flex items-center justify-center mr-3 transition-colors duration-150">
+                                            <i class="fas fa-credit-card text-green-600 text-xs"></i>
+                                        </div>
+                                        <div>
+                                            <div class="font-medium">Abonnements</div>
+                                            <div class="text-xs text-gray-500">Suivre les souscriptions</div>
+                                        </div>
+                                    </a>
+                                    <a href="{% url 'subscription:admin_plans' %}" class="admin-menu-item group flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-purple-50 hover:text-purple-700 transition-colors duration-150">
+                                        <div class="w-8 h-8 bg-purple-100 group-hover:bg-purple-200 rounded-lg flex items-center justify-center mr-3 transition-colors duration-150">
+                                            <i class="fas fa-list text-purple-600 text-xs"></i>
+                                        </div>
+                                        <div>
+                                            <div class="font-medium">Plans</div>
+                                            <div class="text-xs text-gray-500">Configurer les offres</div>
+                                        </div>
+                                    </a>
+                                    <div class="border-t border-gray-100"></div>
+                                    <a href="/admin/" class="admin-menu-item group flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors duration-150">
+                                        <div class="w-8 h-8 bg-gray-100 group-hover:bg-gray-200 rounded-lg flex items-center justify-center mr-3 transition-colors duration-150">
+                                            <i class="fas fa-tools text-gray-600 text-xs"></i>
+                                        </div>
+                                        <div>
+                                            <div class="font-medium">Admin Django</div>
+                                            <div class="text-xs text-gray-500">Interface d'administration</div>
+                                        </div>
+                                    </a>
+                                </div>
                             </div>
                         </div>
                         {% else %}
@@ -128,28 +232,80 @@
                 <div class="flex items-center">
                     {% if user.is_authenticated %}
                     <div class="relative dropdown">
-                        <button class="flex items-center text-white hover:text-gray-200 px-3 py-2 rounded-md text-sm font-medium">
-                            <img class="h-8 w-8 rounded-full mr-2" src="https://ui-avatars.com/api/?name={{ user.get_full_name|urlencode }}&background=random" alt="Avatar">
-                            <span class="hidden md:block">{{ user.get_full_name|default:user.email }}</span>
-                            <i class="fas fa-chevron-down ml-1 text-xs"></i>
-                        </button>
-                        <div class="dropdown-menu">
-                            <div class="px-4 py-2 text-sm text-gray-700 border-b border-gray-100">
-                                <div class="font-medium">{{ user.get_full_name|default:user.email }}</div>
-                                <div class="text-xs text-gray-500">
-                                    {% if user.is_admin %}Administrateur{% else %}Client{% endif %}
+                        <button id="user-menu-button" class="bg-gray-800 flex text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-white" aria-expanded="false" aria-haspopup="true">
+                            <span class="sr-only">Open user menu</span>
+                            <div class="flex items-center space-x-3 px-3 py-2">
+                                <div class="flex-shrink-0">
+                                    <div class="h-8 w-8 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
+                                        <span class="text-white text-sm font-medium">
+                                            {{ user.first_name|first|upper }}{{ user.last_name|first|upper }}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="hidden md:block">
+                                    <div class="text-base font-medium leading-none text-white">{{ user.get_full_name }}</div>
+                                    <div class="text-sm font-medium leading-none text-gray-400 mt-1">
+                                        {% if user.is_staff %}
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                                Admin
+                                            </span>
+                                        {% else %}
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                                User
+                                            </span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="hidden md:block ml-2">
+                                    <svg id="user-chevron" class="h-5 w-5 text-gray-400 transition-transform duration-200" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                    </svg>
                                 </div>
                             </div>
-                            <a href="{% url 'auth:profile' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                <i class="fas fa-user mr-2"></i> Mon Profil
-                            </a>
-                            <a href="{% url 'auth:profile_edit' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                <i class="fas fa-edit mr-2"></i> Modifier le Profil
-                            </a>
-                            <div class="border-t border-gray-100"></div>
-                            <a href="{% url 'auth:logout' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                <i class="fas fa-sign-out-alt mr-2"></i> Déconnexion
-                            </a>
+                        </button>
+                        <div class="user-dropdown origin-top-right absolute right-0 mt-3 w-72 rounded-xl shadow-2xl bg-white ring-1 ring-black ring-opacity-5 focus:outline-none dropdown-menu overflow-hidden opacity-0 invisible transform scale-95 transition-all duration-200">
+                            <div class="bg-gradient-to-r from-gray-50 to-slate-50 px-4 py-4 border-b border-gray-100">
+                                <div class="flex items-center space-x-3">
+                                    <img class="h-12 w-12 rounded-full" src="https://ui-avatars.com/api/?name={{ user.get_full_name|urlencode }}&background=random" alt="Avatar">
+                                    <div>
+                                        <h3 class="text-sm font-semibold text-gray-900">{{ user.get_full_name|default:user.email }}</h3>
+                                        <p class="text-xs text-gray-600">{{ user.email }}</p>
+                                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 mt-1">
+                                            {% if user.is_admin %}Administrateur{% else %}Client{% endif %}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="py-2">
+                                <a href="{% url 'auth:profile' %}" class="user-menu-item group flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition-colors duration-150">
+                                    <div class="w-8 h-8 bg-blue-100 group-hover:bg-blue-200 rounded-lg flex items-center justify-center mr-3 transition-colors duration-150">
+                                        <i class="fas fa-user text-blue-600 text-xs"></i>
+                                    </div>
+                                    <div>
+                                        <div class="font-medium">Mon Profil</div>
+                                        <div class="text-xs text-gray-500">Voir mes informations</div>
+                                    </div>
+                                </a>
+                                <a href="{% url 'auth:profile_edit' %}" class="user-menu-item group flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700 transition-colors duration-150">
+                                    <div class="w-8 h-8 bg-green-100 group-hover:bg-green-200 rounded-lg flex items-center justify-center mr-3 transition-colors duration-150">
+                                        <i class="fas fa-edit text-green-600 text-xs"></i>
+                                    </div>
+                                    <div>
+                                        <div class="font-medium">Modifier le Profil</div>
+                                        <div class="text-xs text-gray-500">Gérer mes informations</div>
+                                    </div>
+                                </a>
+                                <div class="border-t border-gray-100"></div>
+                                <a href="{% url 'auth:logout' %}" class="user-menu-item group flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-red-50 hover:text-red-700 transition-colors duration-150">
+                                    <div class="w-8 h-8 bg-red-100 group-hover:bg-red-200 rounded-lg flex items-center justify-center mr-3 transition-colors duration-150">
+                                        <i class="fas fa-sign-out-alt text-red-600 text-xs"></i>
+                                    </div>
+                                    <div>
+                                        <div class="font-medium">Déconnexion</div>
+                                        <div class="text-xs text-gray-500">Quitter la session</div>
+                                    </div>
+                                </a>
+                            </div>
                         </div>
                     </div>
                     {% else %}
@@ -166,7 +322,7 @@
                 
                 <!-- Menu mobile -->
                 <div class="md:hidden flex items-center">
-                    <button id="mobile-menu-button" class="text-white hover:text-gray-200 p-2">
+                    <button id="mobile-menu-button" class="mobile-menu-button text-white hover:text-gray-200 p-2">
                         <i class="fas fa-bars"></i>
                     </button>
                 </div>
@@ -174,47 +330,74 @@
         </div>
         
         <!-- Menu mobile -->
-        <div id="mobile-menu" class="hidden md:hidden bg-blue-700">
+        <div id="mobile-menu" class="mobile-menu-slide md:hidden bg-blue-700">
             {% if user.is_authenticated %}
             <div class="px-2 pt-2 pb-3 space-y-1">
-                <a href="{% url 'dashboard:index' %}" class="text-white hover:bg-blue-600 block px-3 py-2 rounded-md text-base font-medium">
+                <!-- Dashboard -->
+                <a href="{% url 'dashboard:index' %}" class="mobile-menu-item text-white hover:bg-blue-600 block px-3 py-2 rounded-md text-base font-medium">
                     <i class="fas fa-tachometer-alt mr-2"></i> Dashboard
                 </a>
                 
                 {% if user.is_admin %}
-                <a href="{% url 'auth:user_list' %}" class="text-white hover:bg-blue-600 block px-3 py-2 rounded-md text-base font-medium">
-                    <i class="fas fa-users mr-2"></i> Utilisateurs
-                </a>
-                <a href="{% url 'subscription:admin_subscriptions' %}" class="text-white hover:bg-blue-600 block px-3 py-2 rounded-md text-base font-medium">
-                    <i class="fas fa-credit-card mr-2"></i> Abonnements
-                </a>
-                <a href="{% url 'subscription:admin_plans' %}" class="text-white hover:bg-blue-600 block px-3 py-2 rounded-md text-base font-medium">
-                    <i class="fas fa-list mr-2"></i> Plans
-                </a>
+                <!-- Administration Section -->
+                <div class="mobile-admin-section">
+                    <button id="mobile-admin-toggle" class="mobile-menu-item text-white hover:bg-blue-600 w-full text-left px-3 py-2 rounded-md text-base font-medium flex items-center justify-between">
+                        <span><i class="fas fa-cog mr-2"></i> Administration</span>
+                        <i class="fas fa-chevron-down transition-transform duration-200"></i>
+                    </button>
+                    <div id="mobile-admin-submenu" class="mobile-menu-slide bg-blue-800 rounded-md mt-1 overflow-hidden">
+                        <a href="{% url 'auth:user_list' %}" class="mobile-menu-item text-white hover:bg-blue-600 block px-6 py-2 text-sm">
+                            <i class="fas fa-users mr-2"></i> Utilisateurs
+                        </a>
+                        <a href="{% url 'subscription:admin_subscriptions' %}" class="mobile-menu-item text-white hover:bg-blue-600 block px-6 py-2 text-sm">
+                            <i class="fas fa-credit-card mr-2"></i> Abonnements
+                        </a>
+                        <a href="{% url 'subscription:admin_plans' %}" class="mobile-menu-item text-white hover:bg-blue-600 block px-6 py-2 text-sm">
+                            <i class="fas fa-list mr-2"></i> Plans
+                        </a>
+                        <a href="/admin/" class="mobile-menu-item text-white hover:bg-blue-600 block px-6 py-2 text-sm">
+                            <i class="fas fa-tools mr-2"></i> Django Admin
+                        </a>
+                    </div>
+                </div>
                 {% else %}
-                <a href="{% url 'subscription:plans' %}" class="text-white hover:bg-blue-600 block px-3 py-2 rounded-md text-base font-medium">
+                <!-- User Section -->
+                <a href="{% url 'subscription:plans' %}" class="mobile-menu-item text-white hover:bg-blue-600 block px-3 py-2 rounded-md text-base font-medium">
                     <i class="fas fa-list mr-2"></i> Plans
                 </a>
-                <a href="{% url 'subscription:my_subscription' %}" class="text-white hover:bg-blue-600 block px-3 py-2 rounded-md text-base font-medium">
+                <a href="{% url 'subscription:my_subscription' %}" class="mobile-menu-item text-white hover:bg-blue-600 block px-3 py-2 rounded-md text-base font-medium">
                     <i class="fas fa-user-circle mr-2"></i> Mon Abonnement
                 </a>
                 {% endif %}
                 
-                <div class="border-t border-blue-600 pt-2">
-                    <a href="{% url 'auth:profile' %}" class="text-white hover:bg-blue-600 block px-3 py-2 rounded-md text-base font-medium">
-                        <i class="fas fa-user mr-2"></i> Mon Profil
-                    </a>
-                    <a href="{% url 'auth:logout' %}" class="text-white hover:bg-blue-600 block px-3 py-2 rounded-md text-base font-medium">
-                        <i class="fas fa-sign-out-alt mr-2"></i> Déconnexion
-                    </a>
+                <!-- User Profile Section -->
+                <div class="border-t border-blue-600 pt-2 mt-2">
+                    <div class="mobile-user-section">
+                        <button id="mobile-user-toggle" class="mobile-menu-item text-white hover:bg-blue-600 w-full text-left px-3 py-2 rounded-md text-base font-medium flex items-center justify-between">
+                            <span><i class="fas fa-user mr-2"></i> {{ user.get_full_name|default:user.email }}</span>
+                            <i class="fas fa-chevron-down transition-transform duration-200"></i>
+                        </button>
+                        <div id="mobile-user-submenu" class="mobile-menu-slide bg-blue-800 rounded-md mt-1 overflow-hidden">
+                            <a href="{% url 'auth:profile' %}" class="mobile-menu-item text-white hover:bg-blue-600 block px-6 py-2 text-sm">
+                                <i class="fas fa-user mr-2"></i> Mon Profil
+                            </a>
+                            <a href="{% url 'auth:profile_edit' %}" class="mobile-menu-item text-white hover:bg-blue-600 block px-6 py-2 text-sm">
+                                <i class="fas fa-edit mr-2"></i> Modifier le Profil
+                            </a>
+                            <a href="{% url 'auth:logout' %}" class="mobile-menu-item text-white hover:bg-red-600 block px-6 py-2 text-sm">
+                                <i class="fas fa-sign-out-alt mr-2"></i> Déconnexion
+                            </a>
+                        </div>
+                    </div>
                 </div>
             </div>
             {% else %}
+            <!-- Guest Menu -->
             <div class="px-2 pt-2 pb-3 space-y-1">
-                <a href="{% url 'auth:login' %}" class="text-white hover:bg-blue-600 block px-3 py-2 rounded-md text-base font-medium">
+                <a href="{% url 'auth:login' %}" class="mobile-menu-item text-white hover:bg-blue-600 block px-3 py-2 rounded-md text-base font-medium">
                     <i class="fas fa-sign-in-alt mr-2"></i> Connexion
                 </a>
-                <a href="{% url 'auth:register' %}" class="text-white hover:bg-blue-600 block px-3 py-2 rounded-md text-base font-medium">
+                <a href="{% url 'auth:register' %}" class="mobile-menu-item text-white hover:bg-blue-600 block px-3 py-2 rounded-md text-base font-medium">
                     <i class="fas fa-user-plus mr-2"></i> Inscription
                 </a>
             </div>
@@ -307,7 +490,166 @@
         // Menu mobile toggle
         document.getElementById('mobile-menu-button').addEventListener('click', function() {
             const menu = document.getElementById('mobile-menu');
-            menu.classList.toggle('hidden');
+            const icon = this.querySelector('i');
+            
+            menu.classList.toggle('show');
+            
+            // Animate hamburger icon
+            if (menu.classList.contains('show')) {
+                icon.classList.remove('fa-bars');
+                icon.classList.add('fa-times');
+            } else {
+                icon.classList.remove('fa-times');
+                icon.classList.add('fa-bars');
+            }
+        });
+        
+        // Mobile submenu toggles
+        const mobileAdminToggle = document.getElementById('mobile-admin-toggle');
+        const mobileUserToggle = document.getElementById('mobile-user-toggle');
+        
+        if (mobileAdminToggle) {
+            mobileAdminToggle.addEventListener('click', function() {
+                const submenu = document.getElementById('mobile-admin-submenu');
+                const icon = this.querySelector('.fa-chevron-down');
+                
+                submenu.classList.toggle('show');
+                icon.style.transform = submenu.classList.contains('show') ? 'rotate(180deg)' : 'rotate(0deg)';
+            });
+        }
+        
+        if (mobileUserToggle) {
+            mobileUserToggle.addEventListener('click', function() {
+                const submenu = document.getElementById('mobile-user-submenu');
+                const icon = this.querySelector('.fa-chevron-down');
+                
+                submenu.classList.toggle('show');
+                icon.style.transform = submenu.classList.contains('show') ? 'rotate(180deg)' : 'rotate(0deg)';
+            });
+        }
+        
+        // Close mobile menu when clicking outside
+        document.addEventListener('click', function(e) {
+            const mobileMenu = document.getElementById('mobile-menu');
+            const mobileMenuButton = document.getElementById('mobile-menu-button');
+            
+            if (!mobileMenu.contains(e.target) && !mobileMenuButton.contains(e.target)) {
+                mobileMenu.classList.remove('show');
+                const icon = mobileMenuButton.querySelector('i');
+                icon.classList.remove('fa-times');
+                icon.classList.add('fa-bars');
+            }
+        });
+        
+        // Handle window resize
+        window.addEventListener('resize', function() {
+            if (window.innerWidth >= 768) {
+                const mobileMenu = document.getElementById('mobile-menu');
+                const mobileMenuButton = document.getElementById('mobile-menu-button');
+                const icon = mobileMenuButton.querySelector('i');
+                
+                mobileMenu.classList.remove('show');
+                icon.classList.remove('fa-times');
+                icon.classList.add('fa-bars');
+                
+                // Close all submenus
+                document.getElementById('mobile-admin-submenu')?.classList.remove('show');
+                document.getElementById('mobile-user-submenu')?.classList.remove('show');
+            }
+        });
+        
+        // Responsive dropdown handling
+        document.addEventListener('DOMContentLoaded', function() {
+            const adminMenuBtn = document.getElementById('admin-menu-button');
+            const userMenuBtn = document.getElementById('user-menu-button');
+            const adminDropdown = document.querySelector('.admin-dropdown');
+            const userDropdown = document.querySelector('.user-dropdown');
+            const adminChevron = document.getElementById('admin-chevron');
+            const userChevron = document.getElementById('user-chevron');
+            
+            // Desktop dropdown toggle for admin menu
+            if (adminMenuBtn && adminDropdown) {
+                adminMenuBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const isOpen = adminDropdown.classList.contains('show');
+                    
+                    // Close all dropdowns first
+                    adminDropdown.classList.remove('show');
+                    adminDropdown.classList.remove('opacity-100', 'visible', 'scale-100');
+                    adminDropdown.classList.add('opacity-0', 'invisible', 'scale-95');
+                    userDropdown?.classList.remove('show');
+                    userDropdown?.classList.remove('opacity-100', 'visible', 'scale-100');
+                    userDropdown?.classList.add('opacity-0', 'invisible', 'scale-95');
+                    
+                    // Reset chevron icons
+                    if (adminChevron) adminChevron.style.transform = 'rotate(0deg)';
+                    if (userChevron) userChevron.style.transform = 'rotate(0deg)';
+                    
+                    // Toggle current dropdown if it wasn't open
+                    if (!isOpen) {
+                        adminDropdown.classList.add('show');
+                        adminDropdown.classList.remove('opacity-0', 'invisible', 'scale-95');
+                        adminDropdown.classList.add('opacity-100', 'visible', 'scale-100');
+                        if (adminChevron) adminChevron.style.transform = 'rotate(180deg)';
+                    }
+                });
+            }
+            
+            // Desktop dropdown toggle for user menu
+            if (userMenuBtn && userDropdown) {
+                userMenuBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const isOpen = userDropdown.classList.contains('show');
+                    
+                    // Close all dropdowns first
+                    adminDropdown?.classList.remove('show');
+                    adminDropdown?.classList.remove('opacity-100', 'visible', 'scale-100');
+                    adminDropdown?.classList.add('opacity-0', 'invisible', 'scale-95');
+                    userDropdown.classList.remove('show');
+                    userDropdown.classList.remove('opacity-100', 'visible', 'scale-100');
+                    userDropdown.classList.add('opacity-0', 'invisible', 'scale-95');
+                    
+                    // Reset chevron icons
+                    if (adminChevron) adminChevron.style.transform = 'rotate(0deg)';
+                    if (userChevron) userChevron.style.transform = 'rotate(0deg)';
+                    
+                    // Toggle current dropdown if it wasn't open
+                    if (!isOpen) {
+                        userDropdown.classList.add('show');
+                        userDropdown.classList.remove('opacity-0', 'invisible', 'scale-95');
+                        userDropdown.classList.add('opacity-100', 'visible', 'scale-100');
+                        if (userChevron) userChevron.style.transform = 'rotate(180deg)';
+                    }
+                });
+            }
+            
+            // Close dropdowns when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!e.target.closest('.dropdown')) {
+                    adminDropdown?.classList.remove('show');
+                    adminDropdown?.classList.remove('opacity-100', 'visible', 'scale-100');
+                    adminDropdown?.classList.add('opacity-0', 'invisible', 'scale-95');
+                    userDropdown?.classList.remove('show');
+                    userDropdown?.classList.remove('opacity-100', 'visible', 'scale-100');
+                    userDropdown?.classList.add('opacity-0', 'invisible', 'scale-95');
+                    if (adminChevron) adminChevron.style.transform = 'rotate(0deg)';
+                    if (userChevron) userChevron.style.transform = 'rotate(0deg)';
+                }
+            });
+            
+            // Handle window resize
+            window.addEventListener('resize', function() {
+                if (window.innerWidth >= 768) {
+                    adminDropdown?.classList.remove('show');
+                    adminDropdown?.classList.remove('opacity-100', 'visible', 'scale-100');
+                    adminDropdown?.classList.add('opacity-0', 'invisible', 'scale-95');
+                    userDropdown?.classList.remove('show');
+                    userDropdown?.classList.remove('opacity-100', 'visible', 'scale-100');
+                    userDropdown?.classList.add('opacity-0', 'invisible', 'scale-95');
+                    if (adminChevron) adminChevron.style.transform = 'rotate(0deg)';
+                    if (userChevron) userChevron.style.transform = 'rotate(0deg)';
+                }
+            });
         });
         
         // Auto-hide alerts after 5 seconds

@@ -11,7 +11,7 @@ class UserProfileInline(admin.StackedInline):
     verbose_name_plural = 'Profil'
     fields = (
         'bio', 'location', 'birth_date', 'website',
-        'email_notifications', 'newsletter'
+        'email_notifications'
     )
 
 
@@ -137,11 +137,11 @@ class UserProfileAdmin(admin.ModelAdmin):
     
     list_display = (
         'user', 'location', 'email_notifications',
-        'newsletter', 'created_at'
+        'created_at'
     )
     
     list_filter = (
-        'email_notifications', 'newsletter', 'created_at'
+        'email_notifications', 'created_at'
     )
     
     search_fields = ('user__email', 'user__first_name', 'user__last_name', 'location')
@@ -156,7 +156,7 @@ class UserProfileAdmin(admin.ModelAdmin):
             'fields': ('bio', 'location', 'birth_date', 'website')
         }),
         ('Préférences', {
-            'fields': ('email_notifications', 'newsletter')
+            'fields': ('email_notifications',)
         }),
         ('Métadonnées', {
             'fields': ('created_at', 'updated_at'),

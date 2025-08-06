@@ -1,0 +1,165 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Test des Permissions d'Abonnement{% endblock %}
+
+{% block extra_css %}
+<style>
+    .permission-test-container {
+        min-height: 400px;
+        padding: 2rem;
+        border-radius: 8px;
+        margin: 2rem 0;
+        transition: background-color 0.3s ease;
+    }
+    
+    .permission-test-yellow {
+        background-color: #fef3c7; /* Jaune clair */
+        border: 2px solid #f59e0b; /* Bordure jaune */
+    }
+    
+    .permission-test-default {
+        background-color: #f9fafb; /* Gris clair */
+        border: 2px solid #e5e7eb; /* Bordure grise */
+    }
+    
+    .permission-badge {
+        display: inline-block;
+        padding: 0.5rem 1rem;
+        border-radius: 9999px;
+        font-size: 0.875rem;
+        font-weight: 600;
+        margin: 0.25rem;
+    }
+    
+    .permission-badge-active {
+        background-color: #10b981;
+        color: white;
+    }
+    
+    .permission-badge-inactive {
+        background-color: #6b7280;
+        color: white;
+    }
+    
+    .test-info {
+        background-color: #dbeafe;
+        border: 1px solid #3b82f6;
+        border-radius: 6px;
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-bold text-gray-900 mb-6">
+            <i class="fas fa-crown mr-3 text-purple-600"></i>
+            Test des Permissions Premium
+            <span class="ml-3 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-purple-100 text-purple-800">
+                <i class="fas fa-star mr-1"></i>
+                Exclusif Premium
+            </span>
+        </h1>
+        
+        <!-- Informations de test -->
+        <div class="test-info">
+            <h3 class="text-lg font-semibold text-blue-800 mb-2">
+                <i class="fas fa-info-circle mr-2"></i>
+                Fonctionnalité Premium Exclusive
+            </h3>
+            <p class="text-blue-700">
+                Cette page est <strong>exclusivement accessible aux utilisateurs Premium</strong>. 
+                Elle teste l'affichage des permissions d'abonnement payant et le fond devient <strong>jaune</strong> 
+                pour indiquer les permissions temporaires actives.
+            </p>
+            <div class="mt-2 p-2 bg-purple-50 border border-purple-200 rounded">
+                <p class="text-purple-700 text-sm">
+                    <i class="fas fa-crown mr-1"></i>
+                    <strong>Avantage Premium :</strong> Accès aux outils de test et de diagnostic avancés
+                </p>
+            </div>
+        </div>
+        
+        <!-- Conteneur de test avec couleur conditionnelle -->
+        <div class="permission-test-container {% if has_paid_permissions %}permission-test-yellow{% else %}permission-test-default{% endif %}">
+            <div class="text-center">
+                <h2 class="text-2xl font-bold mb-4">
+                    {% if has_paid_permissions %}
+                        <i class="fas fa-crown text-yellow-600 mr-2"></i>
+                        Utilisateur Premium Détecté !
+                    {% else %}
+                        <i class="fas fa-user text-gray-600 mr-2"></i>
+                        Utilisateur Standard
+                    {% endif %}
+                </h2>
+                
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold mb-3">Statut de l'abonnement :</h3>
+                    {% if user.subscription %}
+                        <div class="bg-white rounded-lg p-4 shadow-sm">
+                            <p><strong>Plan actuel :</strong> {{ user.subscription.plan.name }}</p>
+                            <p><strong>Prix :</strong> {{ user.subscription.plan.price }}€</p>
+                            <p><strong>Statut :</strong> 
+                                <span class="{% if user.subscription.status == 'active' %}text-green-600{% else %}text-red-600{% endif %}">
+                                    {{ user.subscription.get_status_display }}
+                                </span>
+                            </p>
+                        </div>
+                    {% else %}
+                        <p class="text-gray-600">Aucun abonnement actif</p>
+                    {% endif %}
+                </div>
+                
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold mb-3">Permissions temporaires :</h3>
+                    {% if temporary_permissions %}
+                        <div class="flex flex-wrap justify-center">
+                            {% for perm in temporary_permissions %}
+                                <span class="permission-badge {% if perm.is_valid %}permission-badge-active{% else %}permission-badge-inactive{% endif %}">
+                                    {{ perm.permission.name }}
+                                    {% if perm.is_expired %}
+                                        (Expiré)
+                                    {% else %}
+                                        (Expire le {{ perm.expires_at|date:"d/m/Y" }})
+                                    {% endif %}
+                                </span>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-gray-600">Aucune permission temporaire</p>
+                    {% endif %}
+                </div>
+                
+                <div class="bg-white rounded-lg p-4 shadow-sm">
+                    <h3 class="text-lg font-semibold mb-3">Couleur de fond de test :</h3>
+                    <p class="text-2xl font-bold {% if has_paid_permissions %}text-yellow-600{% else %}text-gray-600{% endif %}">
+                        {% if has_paid_permissions %}
+                            🟨 JAUNE (Permissions payantes actives)
+                        {% else %}
+                            ⬜ GRIS (Aucune permission payante)
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Actions -->
+        <div class="text-center mt-8">
+            <a href="{% url 'subscription:my_subscription' %}" class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 mr-4">
+                <i class="fas fa-arrow-left mr-2"></i>
+                Retour à Mon Abonnement
+            </a>
+            
+            {% if not has_paid_permissions %}
+                <a href="{% url 'subscription:plans' %}" class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-green-600 hover:bg-green-700">
+                    <i class="fas fa-upgrade mr-2"></i>
+                    Passer à un Plan Premium
+                </a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,343 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Gestion des Abonnements - SaaS Platform{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+    <!-- En-tête -->
+    <div class="md:flex md:items-center md:justify-between mb-8">
+        <div class="flex-1 min-w-0">
+            <h2 class="text-2xl font-bold leading-7 text-gray-900 sm:text-3xl sm:truncate">
+                Gestion des abonnements
+            </h2>
+            <p class="mt-1 text-sm text-gray-500">
+                Gérez tous les abonnements de la plateforme
+            </p>
+        </div>
+        <div class="mt-4 flex md:mt-0 md:ml-4">
+            <a href="{% url 'dashboard:index' %}" 
+               class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                <i class="fas fa-arrow-left mr-2"></i>
+                Retour au tableau de bord
+            </a>
+        </div>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="mb-4 rounded-md {% if message.tags == 'success' %}bg-green-50 border border-green-200{% else %}bg-red-50 border border-red-200{% endif %} p-4">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        {% if message.tags == 'success' %}
+                            <i class="fas fa-check-circle text-green-400"></i>
+                        {% else %}
+                            <i class="fas fa-exclamation-circle text-red-400"></i>
+                        {% endif %}
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-sm {% if message.tags == 'success' %}text-green-800{% else %}text-red-800{% endif %}">
+                            {{ message }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <!-- Statistiques -->
+    <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 mb-8">
+        <div class="bg-white overflow-hidden shadow rounded-lg">
+            <div class="p-5">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-credit-card text-gray-400 text-2xl"></i>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 truncate">
+                                Total abonnements
+                            </dt>
+                            <dd class="text-lg font-medium text-gray-900">
+                                {{ total_subscriptions }}
+                            </dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white overflow-hidden shadow rounded-lg">
+            <div class="p-5">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-check-circle text-green-400 text-2xl"></i>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 truncate">
+                                Abonnements actifs
+                            </dt>
+                            <dd class="text-lg font-medium text-gray-900">
+                                {{ active_subscriptions }}
+                            </dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white overflow-hidden shadow rounded-lg">
+            <div class="p-5">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-pause-circle text-yellow-400 text-2xl"></i>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 truncate">
+                                Abonnements suspendus
+                            </dt>
+                            <dd class="text-lg font-medium text-gray-900">
+                                {{ suspended_subscriptions }}
+                            </dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white overflow-hidden shadow rounded-lg">
+            <div class="p-5">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-euro-sign text-blue-400 text-2xl"></i>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 truncate">
+                                Revenus mensuels
+                            </dt>
+                            <dd class="text-lg font-medium text-gray-900">
+                                {{ monthly_revenue }}€
+                            </dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtres -->
+    <div class="bg-white shadow rounded-lg mb-6">
+        <div class="px-4 py-5 sm:p-6">
+            <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">
+                Filtres
+            </h3>
+            <form method="get" class="grid grid-cols-1 gap-4 sm:grid-cols-4">
+                <div>
+                    <label for="status" class="block text-sm font-medium text-gray-700">Statut</label>
+                    <select name="status" id="status" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                        <option value="">Tous les statuts</option>
+                        <option value="active" {% if request.GET.status == 'active' %}selected{% endif %}>Actif</option>
+                        <option value="suspended" {% if request.GET.status == 'suspended' %}selected{% endif %}>Suspendu</option>
+                        <option value="cancelled" {% if request.GET.status == 'cancelled' %}selected{% endif %}>Annulé</option>
+                        <option value="expired" {% if request.GET.status == 'expired' %}selected{% endif %}>Expiré</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="plan" class="block text-sm font-medium text-gray-700">Plan</label>
+                    <select name="plan" id="plan" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                        <option value="">Tous les plans</option>
+                        {% for plan in available_plans %}
+                            <option value="{{ plan.id }}" {% if request.GET.plan == plan.id|stringformat:'s' %}selected{% endif %}>{{ plan.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label for="search" class="block text-sm font-medium text-gray-700">Recherche</label>
+                    <input type="text" name="search" id="search" value="{{ request.GET.search }}" placeholder="Email ou nom..." class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                </div>
+                <div class="flex items-end">
+                    <button type="submit" class="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        <i class="fas fa-search mr-2"></i>
+                        Filtrer
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Liste des abonnements -->
+    <div class="bg-white shadow overflow-hidden sm:rounded-md">
+        <div class="px-4 py-5 sm:px-6">
+            <h3 class="text-lg leading-6 font-medium text-gray-900">
+                Abonnements ({{ subscriptions|length }})
+            </h3>
+        </div>
+        
+        {% if subscriptions %}
+            <ul class="divide-y divide-gray-200">
+                {% for subscription in subscriptions %}
+                    <li class="px-4 py-4 sm:px-6 hover:bg-gray-50">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0">
+                                    {% if subscription.user.userprofile.avatar %}
+                                        <img class="h-10 w-10 rounded-full" src="{{ subscription.user.userprofile.avatar.url }}" alt="{{ subscription.user.get_full_name }}">
+                                    {% else %}
+                                        <div class="h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center">
+                                            <i class="fas fa-user text-gray-600"></i>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <div class="ml-4">
+                                    <div class="flex items-center">
+                                        <div class="text-sm font-medium text-gray-900">
+                                            {{ subscription.user.get_full_name|default:subscription.user.email }}
+                                        </div>
+                                        <span class="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
+                                            {% if subscription.status == 'active' %}bg-green-100 text-green-800
+                                            {% elif subscription.status == 'suspended' %}bg-yellow-100 text-yellow-800
+                                            {% elif subscription.status == 'cancelled' %}bg-red-100 text-red-800
+                                            {% elif subscription.status == 'expired' %}bg-gray-100 text-gray-800
+                                            {% endif %}">
+                                            {% if subscription.status == 'active' %}
+                                                <i class="fas fa-check-circle mr-1"></i>Actif
+                                            {% elif subscription.status == 'suspended' %}
+                                                <i class="fas fa-pause-circle mr-1"></i>Suspendu
+                                            {% elif subscription.status == 'cancelled' %}
+                                                <i class="fas fa-times-circle mr-1"></i>Annulé
+                                            {% elif subscription.status == 'expired' %}
+                                                <i class="fas fa-clock mr-1"></i>Expiré
+                                            {% endif %}
+                                        </span>
+                                    </div>
+                                    <div class="text-sm text-gray-500">
+                                        {{ subscription.user.email }}
+                                    </div>
+                                    <div class="text-sm text-gray-500">
+                                        Plan : <span class="font-medium">{{ subscription.plan.name }}</span> ({{ subscription.plan.price }}€/{{ subscription.plan.get_billing_cycle_display|lower }})
+                                    </div>
+                                    <div class="text-xs text-gray-400">
+                                        Début : {{ subscription.start_date|date:"d/m/Y" }}
+                                        {% if subscription.end_date %}
+                                            • Fin : {{ subscription.end_date|date:"d/m/Y" }}
+                                        {% endif %}
+                                        {% if subscription.next_billing_date %}
+                                            • Prochaine facturation : {{ subscription.next_billing_date|date:"d/m/Y" }}
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                {% if subscription.status == 'active' %}
+                                    <button onclick="suspendSubscription({{ subscription.id }})"
+                                            class="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md text-yellow-700 bg-yellow-100 hover:bg-yellow-200">
+                                        <i class="fas fa-pause mr-1"></i>
+                                        Suspendre
+                                    </button>
+                                {% elif subscription.status == 'suspended' %}
+                                    <button onclick="reactivateSubscription({{ subscription.id }})"
+                                            class="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md text-green-700 bg-green-100 hover:bg-green-200">
+                                        <i class="fas fa-play mr-1"></i>
+                                        Réactiver
+                                    </button>
+                                {% endif %}
+                                
+                                <a href="mailto:{{ subscription.user.email }}" 
+                                   class="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200">
+                                    <i class="fas fa-envelope mr-1"></i>
+                                    Contacter
+                                </a>
+                            </div>
+                        </div>
+                    </li>
+                {% endfor %}
+            </ul>
+            
+            <!-- Pagination -->
+            {% if is_paginated %}
+                <div class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+                    <div class="flex-1 flex justify-between sm:hidden">
+                        {% if page_obj.has_previous %}
+                            <a href="?page={{ page_obj.previous_page_number }}" class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                                Précédent
+                            </a>
+                        {% endif %}
+                        {% if page_obj.has_next %}
+                            <a href="?page={{ page_obj.next_page_number }}" class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                                Suivant
+                            </a>
+                        {% endif %}
+                    </div>
+                    <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                        <div>
+                            <p class="text-sm text-gray-700">
+                                Affichage de
+                                <span class="font-medium">{{ page_obj.start_index }}</span>
+                                à
+                                <span class="font-medium">{{ page_obj.end_index }}</span>
+                                sur
+                                <span class="font-medium">{{ page_obj.paginator.count }}</span>
+                                résultats
+                            </p>
+                        </div>
+                        <div>
+                            <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                                {% if page_obj.has_previous %}
+                                    <a href="?page={{ page_obj.previous_page_number }}" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                                        <i class="fas fa-chevron-left"></i>
+                                    </a>
+                                {% endif %}
+                                
+                                {% for num in page_obj.paginator.page_range %}
+                                    {% if page_obj.number == num %}
+                                        <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-blue-50 text-sm font-medium text-blue-600">
+                                            {{ num }}
+                                        </span>
+                                    {% else %}
+                                        <a href="?page={{ num }}" class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
+                                            {{ num }}
+                                        </a>
+                                    {% endif %}
+                                {% endfor %}
+                                
+                                {% if page_obj.has_next %}
+                                    <a href="?page={{ page_obj.next_page_number }}" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                                        <i class="fas fa-chevron-right"></i>
+                                    </a>
+                                {% endif %}
+                            </nav>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        {% else %}
+            <div class="px-4 py-12 text-center">
+                <i class="fas fa-credit-card text-gray-400 text-4xl mb-4"></i>
+                <h3 class="text-lg font-medium text-gray-900 mb-2">Aucun abonnement trouvé</h3>
+                <p class="text-gray-500">Il n'y a actuellement aucun abonnement correspondant aux critères de recherche.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+function suspendSubscription(subscriptionId) {
+    if (confirm('Êtes-vous sûr de vouloir suspendre cet abonnement ?')) {
+        // Implémentation de la suspension d'abonnement
+        alert('Fonctionnalité de suspension à implémenter');
+    }
+}
+
+function reactivateSubscription(subscriptionId) {
+    if (confirm('Êtes-vous sûr de vouloir réactiver cet abonnement ?')) {
+        // Implémentation de la réactivation d'abonnement
+        alert('Fonctionnalité de réactivation à implémenter');
+    }
+}
+</script>
+
+{% csrf_token %}
+{% endblock %}

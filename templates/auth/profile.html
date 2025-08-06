@@ -257,7 +257,7 @@
                             Tableau de bord
                         </a>
                         
-                        {% if user.groups.all|first.name == 'client' %}
+                        {% if user.groups.all.0.name == 'client' %}
                             <a href="{% url 'subscription:my_subscription' %}" 
                                class="w-full flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
                                 <i class="fas fa-credit-card mr-2"></i>

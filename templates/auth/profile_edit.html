@@ -1,0 +1,192 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Modifier le Profil - SaaS Platform{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto py-6 sm:px-6 lg:px-8">
+    <!-- En-tête -->
+    <div class="md:flex md:items-center md:justify-between mb-8">
+        <div class="flex-1 min-w-0">
+            <h2 class="text-2xl font-bold leading-7 text-gray-900 sm:text-3xl sm:truncate">
+                Modifier mon profil
+            </h2>
+            <p class="mt-1 text-sm text-gray-500">
+                Mettez à jour vos informations personnelles
+            </p>
+        </div>
+        <div class="mt-4 flex md:mt-0 md:ml-4">
+            <a href="{% url 'auth:profile' %}" 
+               class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                <i class="fas fa-arrow-left mr-2"></i>
+                Retour au profil
+            </a>
+        </div>
+    </div>
+
+    <div class="bg-white shadow rounded-lg">
+        <div class="px-4 py-5 sm:p-6">
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="mb-4 rounded-md {% if message.tags == 'success' %}bg-green-50 border border-green-200{% else %}bg-red-50 border border-red-200{% endif %} p-4">
+                        <div class="flex">
+                            <div class="flex-shrink-0">
+                                {% if message.tags == 'success' %}
+                                    <i class="fas fa-check-circle text-green-400"></i>
+                                {% else %}
+                                    <i class="fas fa-exclamation-circle text-red-400"></i>
+                                {% endif %}
+                            </div>
+                            <div class="ml-3">
+                                <p class="text-sm {% if message.tags == 'success' %}text-green-800{% else %}text-red-800{% endif %}">
+                                    {{ message }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            <form method="post" enctype="multipart/form-data" class="space-y-6">
+                {% csrf_token %}
+                
+                <!-- Informations de base -->
+                <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                    <div>
+                        <label for="{{ form.first_name.id_for_label }}" class="block text-sm font-medium text-gray-700">
+                            Prénom
+                        </label>
+                        <div class="mt-1">
+                            {{ form.first_name }}
+                            {% if form.first_name.errors %}
+                                <p class="mt-2 text-sm text-red-600">{{ form.first_name.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div>
+                        <label for="{{ form.last_name.id_for_label }}" class="block text-sm font-medium text-gray-700">
+                            Nom
+                        </label>
+                        <div class="mt-1">
+                            {{ form.last_name }}
+                            {% if form.last_name.errors %}
+                                <p class="mt-2 text-sm text-red-600">{{ form.last_name.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <label for="{{ form.email.id_for_label }}" class="block text-sm font-medium text-gray-700">
+                        Email
+                    </label>
+                    <div class="mt-1">
+                        {{ form.email }}
+                        {% if form.email.errors %}
+                            <p class="mt-2 text-sm text-red-600">{{ form.email.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Informations du profil -->
+                {% if user_profile_form %}
+                    <div class="border-t border-gray-200 pt-6">
+                        <h3 class="text-lg font-medium text-gray-900 mb-4">Informations du profil</h3>
+                        
+                        <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                            <div>
+                                <label for="{{ user_profile_form.phone.id_for_label }}" class="block text-sm font-medium text-gray-700">
+                                    Téléphone
+                                </label>
+                                <div class="mt-1">
+                                    {{ user_profile_form.phone }}
+                                    {% if user_profile_form.phone.errors %}
+                                        <p class="mt-2 text-sm text-red-600">{{ user_profile_form.phone.errors.0 }}</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <div>
+                                <label for="{{ user_profile_form.birth_date.id_for_label }}" class="block text-sm font-medium text-gray-700">
+                                    Date de naissance
+                                </label>
+                                <div class="mt-1">
+                                    {{ user_profile_form.birth_date }}
+                                    {% if user_profile_form.birth_date.errors %}
+                                        <p class="mt-2 text-sm text-red-600">{{ user_profile_form.birth_date.errors.0 }}</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-6">
+                            <label for="{{ user_profile_form.bio.id_for_label }}" class="block text-sm font-medium text-gray-700">
+                                Biographie
+                            </label>
+                            <div class="mt-1">
+                                {{ user_profile_form.bio }}
+                                {% if user_profile_form.bio.errors %}
+                                    <p class="mt-2 text-sm text-red-600">{{ user_profile_form.bio.errors.0 }}</p>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Préférences de notification -->
+                        <div class="mt-6">
+                            <h4 class="text-md font-medium text-gray-900 mb-3">Préférences de notification</h4>
+                            <div class="space-y-3">
+                                <div class="flex items-center">
+                                    {{ user_profile_form.email_notifications }}
+                                    <label for="{{ user_profile_form.email_notifications.id_for_label }}" class="ml-2 text-sm text-gray-700">
+                                        Recevoir les notifications par email
+                                    </label>
+                                </div>
+                                <div class="flex items-center">
+                                    {{ user_profile_form.sms_notifications }}
+                                    <label for="{{ user_profile_form.sms_notifications.id_for_label }}" class="ml-2 text-sm text-gray-700">
+                                        Recevoir les notifications par SMS
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+
+                <!-- Boutons d'action -->
+                <div class="flex justify-end space-x-3 pt-6 border-t border-gray-200">
+                    <a href="{% url 'auth:profile' %}" 
+                       class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                        Annuler
+                    </a>
+                    <button type="submit" 
+                            class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        <i class="fas fa-save mr-2"></i>
+                        Enregistrer les modifications
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Styles pour les champs de formulaire */
+.form-control {
+    @apply block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm;
+}
+
+textarea.form-control {
+    @apply resize-none;
+    min-height: 100px;
+}
+
+input[type="checkbox"] {
+    @apply h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded;
+}
+
+input[type="date"] {
+    @apply block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm;
+}
+</style>
+{% endblock %}

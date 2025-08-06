@@ -27,7 +27,7 @@ from django.utils.decorators import method_decorator
 # Nos modèles personnalisés
 from .models import CustomUser, UserProfile
 # Nos formulaires personnalisés
-from .forms import CustomUserCreationForm, CustomAuthenticationForm, UserProfileForm, CustomUserUpdateForm
+from .forms import CustomUserCreationForm, CustomAuthenticationForm, UserProfileForm, CustomUserUpdateForm, PasswordResetRequestForm, PasswordResetConfirmForm
 # Nos permissions personnalisées
 from .permissions import admin_required, AdminRequiredMixin
 
@@ -242,18 +242,25 @@ class ProfileUpdateView(LoginRequiredMixin, UpdateView):
             context['profile_form'] = UserProfileForm(instance=self.request.user.profile)
         return context
     
-    def form_valid(self, form):
-        context = self.get_context_data()
-        profile_form = context['profile_form']
+    def post(self, request, *args, **kwargs):
+        """Gère la soumission du formulaire avec validation des deux formulaires."""
+        self.object = self.get_object()
+        user_form = self.get_form()
+        profile_form = UserProfileForm(request.POST, instance=request.user.profile)
         
-        if profile_form.is_valid():
-            self.object = form.save()
-            profile_form.instance = self.object.profile
+        if user_form.is_valid() and profile_form.is_valid():
+            # Sauvegarder les deux formulaires
+            user_form.save()
             profile_form.save()
-            messages.success(self.request, 'Profil mis à jour avec succès!')
+            messages.success(request, 'Profil mis à jour avec succès!')
             return redirect(self.success_url)
         else:
-            return self.render_to_response(self.get_context_data(form=form))
+            # Afficher les erreurs
+            if not user_form.is_valid():
+                messages.error(request, 'Erreur dans les informations utilisateur.')
+            if not profile_form.is_valid():
+                messages.error(request, 'Erreur dans les informations du profil.')
+            return self.render_to_response(self.get_context_data(form=user_form, profile_form=profile_form))
     
     def form_invalid(self, form):
         messages.error(self.request, 'Erreur lors de la mise à jour du profil.')
@@ -370,3 +377,387 @@ def user_info_api(request):
         'date_joined': user.date_joined.isoformat() if user.date_joined else None,
     }
     return JsonResponse(data)
+
+
+@admin_required
+def migrate_user_to_paid(request, user_id):
+    """
+    Migre un utilisateur d'un abonnement gratuit vers un abonnement payant.
+    
+    Cette vue permet aux administrateurs de :
+    - Sélectionner un plan payant pour l'utilisateur
+    - Créer un nouvel abonnement actif
+    - Annuler l'ancien abonnement gratuit s'il existe
+    - Enregistrer l'historique de la migration
+    """
+    from apps.subscription.models import Plan, Subscription, SubscriptionHistory
+    from django.utils import timezone
+    import json
+    
+    try:
+        user = CustomUser.objects.get(id=user_id)
+    except CustomUser.DoesNotExist:
+        return JsonResponse({
+            'success': False,
+            'message': 'Utilisateur introuvable'
+        })
+    
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            plan_id = data.get('plan_id')
+            
+            if not plan_id:
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Plan non spécifié'
+                })
+            
+            # Récupérer le plan sélectionné
+            try:
+                new_plan = Plan.objects.get(id=plan_id, is_active=True)
+            except Plan.DoesNotExist:
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Plan introuvable ou inactif'
+                })
+            
+            # Vérifier que ce n'est pas un plan gratuit
+            if new_plan.plan_type == 'free':
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Impossible de migrer vers un plan gratuit'
+                })
+            
+            # Vérifier si l'utilisateur a déjà un abonnement actif
+            current_subscription = Subscription.objects.filter(
+                user=user,
+                status='active'
+            ).first()
+            
+            old_plan = None
+            if current_subscription:
+                # Annuler l'ancien abonnement
+                old_plan = current_subscription.plan
+                current_subscription.status = 'cancelled'
+                current_subscription.save()
+            
+            # Créer le nouvel abonnement
+            new_subscription = Subscription.objects.create(
+                user=user,
+                plan=new_plan,
+                status='active',
+                start_date=timezone.now(),
+                amount_paid=new_plan.price,
+                payment_method='Migration administrative'
+            )
+            
+            # Calculer la date de fin selon le cycle de facturation
+            if new_plan.billing_cycle == 'monthly':
+                new_subscription.end_date = new_subscription.start_date + timezone.timedelta(days=30)
+                new_subscription.next_billing_date = new_subscription.end_date
+            elif new_plan.billing_cycle == 'yearly':
+                new_subscription.end_date = new_subscription.start_date + timezone.timedelta(days=365)
+                new_subscription.next_billing_date = new_subscription.end_date
+            elif new_plan.billing_cycle == 'lifetime':
+                new_subscription.end_date = None
+                new_subscription.next_billing_date = None
+            
+            new_subscription.save()
+            
+            # Enregistrer l'historique
+            SubscriptionHistory.objects.create(
+                subscription=new_subscription,
+                action='upgraded' if old_plan and old_plan.price < new_plan.price else 'created',
+                old_plan=old_plan,
+                new_plan=new_plan,
+                notes=f'Migration administrative par {request.user.email}'
+            )
+            
+            return JsonResponse({
+                'success': True,
+                'message': f'Utilisateur migré vers le plan {new_plan.name} avec succès'
+            })
+            
+        except json.JSONDecodeError:
+            return JsonResponse({
+                'success': False,
+                'message': 'Données JSON invalides'
+            })
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'message': f'Erreur lors de la migration: {str(e)}'
+            })
+    
+    # GET request - Retourner les plans disponibles
+    available_plans = Plan.objects.filter(
+        is_active=True,
+        plan_type__in=['basic', 'premium', 'enterprise']
+    ).order_by('price')
+    
+    plans_data = [{
+        'id': plan.id,
+        'name': plan.name,
+        'price': float(plan.price),
+        'billing_cycle': plan.get_billing_cycle_display(),
+        'description': plan.description
+    } for plan in available_plans]
+    
+    return JsonResponse({
+        'success': True,
+        'user': {
+            'id': user.id,
+            'name': user.get_full_name() or user.email,
+            'email': user.email
+        },
+        'available_plans': plans_data
+    })
+
+
+@admin_required
+def migrate_user_to_free(request, user_id):
+    """
+    Migre un utilisateur d'un abonnement payant vers un abonnement gratuit.
+    
+    Cette vue permet aux administrateurs de :
+    - Annuler l'abonnement payant actuel de l'utilisateur
+    - Créer un nouvel abonnement gratuit
+    - Enregistrer l'historique de la rétrogradation
+    """
+    from apps.subscription.models import Plan, Subscription, SubscriptionHistory
+    from django.utils import timezone
+    import json
+    
+    try:
+        user = CustomUser.objects.get(id=user_id)
+    except CustomUser.DoesNotExist:
+        return JsonResponse({
+            'success': False,
+            'message': 'Utilisateur introuvable'
+        })
+    
+    if request.method == 'POST':
+        try:
+            # Vérifier si l'utilisateur a un abonnement payant actif
+            current_subscription = Subscription.objects.filter(
+                user=user,
+                status='active'
+            ).first()
+            
+            if not current_subscription:
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Aucun abonnement actif trouvé pour cet utilisateur'
+                })
+            
+            # Vérifier que l'abonnement actuel n'est pas déjà gratuit
+            if current_subscription.plan.plan_type == 'free':
+                return JsonResponse({
+                    'success': False,
+                    'message': 'L\'utilisateur a déjà un abonnement gratuit'
+                })
+            
+            # Récupérer le plan gratuit
+            try:
+                free_plan = Plan.objects.get(plan_type='free', is_active=True)
+            except Plan.DoesNotExist:
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Plan gratuit introuvable'
+                })
+            
+            old_plan = current_subscription.plan
+            
+            # Annuler l'abonnement payant actuel
+            current_subscription.status = 'cancelled'
+            current_subscription.save()
+            
+            # Créer le nouvel abonnement gratuit
+            new_subscription = Subscription.objects.create(
+                user=user,
+                plan=free_plan,
+                status='active',
+                start_date=timezone.now(),
+                amount_paid=0.00,
+                payment_method='Rétrogradation administrative'
+            )
+            
+            # Les abonnements gratuits n'ont pas de date de fin
+            new_subscription.end_date = None
+            new_subscription.next_billing_date = None
+            new_subscription.save()
+            
+            # Enregistrer l'historique
+            SubscriptionHistory.objects.create(
+                subscription=new_subscription,
+                action='downgraded',
+                old_plan=old_plan,
+                new_plan=free_plan,
+                notes=f'Rétrogradation administrative par {request.user.email}'
+            )
+            
+            return JsonResponse({
+                'success': True,
+                'message': f'Utilisateur rétrogradé vers le plan gratuit avec succès'
+            })
+            
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'message': f'Erreur lors de la rétrogradation: {str(e)}'
+            })
+    
+    # GET request - Retourner les informations de l'utilisateur et son abonnement actuel
+    current_subscription = Subscription.objects.filter(
+        user=user,
+        status='active'
+    ).first()
+    
+    if not current_subscription or current_subscription.plan.plan_type == 'free':
+        return JsonResponse({
+            'success': False,
+            'message': 'L\'utilisateur n\'a pas d\'abonnement payant actif'
+        })
+    
+    return JsonResponse({
+        'success': True,
+        'user': {
+            'id': user.id,
+            'name': user.get_full_name() or user.email,
+            'email': user.email
+        },
+        'current_plan': {
+            'name': current_subscription.plan.name,
+            'price': float(current_subscription.plan.price),
+            'billing_cycle': current_subscription.plan.get_billing_cycle_display()
+        }
+    })
+
+
+# === GESTION DE LA RÉINITIALISATION DE MOT DE PASSE ===
+
+def password_reset_request(request):
+    """
+    Vue pour demander une réinitialisation de mot de passe.
+    Envoie un email avec un lien de réinitialisation.
+    """
+    from .forms import PasswordResetRequestForm
+    from .models import PasswordResetToken
+    from django.core.mail import send_mail
+    from django.conf import settings
+    from django.urls import reverse
+    
+    if request.method == 'POST':
+        form = PasswordResetRequestForm(request.POST)
+        if form.is_valid():
+            email = form.cleaned_data['email']
+            try:
+                user = CustomUser.objects.get(email=email)
+                
+                # Créer un token de réinitialisation
+                reset_token = PasswordResetToken.create_token(user)
+                
+                # Construire l'URL de réinitialisation
+                reset_url = request.build_absolute_uri(
+                    reverse('auth:password_reset_confirm', kwargs={'token': reset_token.token})
+                )
+                
+                # Envoyer l'email
+                subject = 'Réinitialisation de votre mot de passe'
+                message = f"""
+Bonjour {user.get_full_name() or user.email},
+
+Vous avez demandé une réinitialisation de votre mot de passe.
+
+Cliquez sur le lien suivant pour créer un nouveau mot de passe :
+{reset_url}
+
+Ce lien expirera dans 24 heures.
+
+Si vous n'avez pas demandé cette réinitialisation, ignorez cet email.
+
+Cordialement,
+L'équipe de support
+"""
+                
+                send_mail(
+                    subject,
+                    message,
+                    settings.DEFAULT_FROM_EMAIL,
+                    [email],
+                    fail_silently=False,
+                )
+                
+                messages.success(
+                    request,
+                    'Un email de réinitialisation a été envoyé à votre adresse.'
+                )
+                return redirect('auth:login')
+                
+            except CustomUser.DoesNotExist:
+                # Ne pas révéler si l'email existe ou non pour des raisons de sécurité
+                messages.success(
+                    request,
+                    'Si cette adresse email existe, un email de réinitialisation a été envoyé.'
+                )
+                return redirect('auth:login')
+            except Exception as e:
+                messages.error(
+                    request,
+                    'Une erreur est survenue lors de l\'envoi de l\'email. Veuillez réessayer.'
+                )
+    else:
+        form = PasswordResetRequestForm()
+    
+    return render(request, 'auth/password_reset_request.html', {'form': form})
+
+
+def password_reset_confirm(request, token):
+    """
+    Vue pour confirmer la réinitialisation de mot de passe avec un token.
+    """
+    from .forms import PasswordResetConfirmForm
+    from .models import PasswordResetToken
+    
+    try:
+        reset_token = PasswordResetToken.objects.get(token=token)
+        
+        if not reset_token.is_valid():
+            messages.error(
+                request,
+                'Ce lien de réinitialisation a expiré ou a déjà été utilisé.'
+            )
+            return redirect('auth:password_reset_request')
+        
+        if request.method == 'POST':
+            form = PasswordResetConfirmForm(request.POST)
+            if form.is_valid():
+                # Mettre à jour le mot de passe
+                user = reset_token.user
+                user.set_password(form.cleaned_data['password1'])
+                user.save()
+                
+                # Marquer le token comme utilisé
+                reset_token.mark_as_used()
+                
+                messages.success(
+                    request,
+                    'Votre mot de passe a été réinitialisé avec succès. Vous pouvez maintenant vous connecter.'
+                )
+                return redirect('auth:login')
+        else:
+            form = PasswordResetConfirmForm()
+        
+        return render(request, 'auth/password_reset_confirm.html', {
+            'form': form,
+            'token': token,
+            'user_email': reset_token.user.email
+        })
+        
+    except PasswordResetToken.DoesNotExist:
+        messages.error(
+            request,
+            'Lien de réinitialisation invalide.'
+        )
+        return redirect('auth:password_reset_request')

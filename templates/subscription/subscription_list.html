@@ -1,0 +1,223 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Abonnements - SaaS Platform{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto py-6 sm:px-6 lg:px-8">
+    <!-- En-tête -->
+    <div class="md:flex md:items-center md:justify-between mb-8">
+        <div class="flex-1 min-w-0">
+            <h2 class="text-2xl font-bold leading-7 text-gray-900 sm:text-3xl sm:truncate">
+                Mes abonnements
+            </h2>
+            <p class="mt-1 text-sm text-gray-500">
+                Gérez vos abonnements et consultez votre historique
+            </p>
+        </div>
+        <div class="mt-4 flex md:mt-0 md:ml-4">
+            <a href="{% url 'subscription:plans' %}" 
+               class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700">
+                <i class="fas fa-plus mr-2"></i>
+                Voir les plans
+            </a>
+        </div>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="mb-4 rounded-md {% if message.tags == 'success' %}bg-green-50 border border-green-200{% else %}bg-red-50 border border-red-200{% endif %} p-4">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        {% if message.tags == 'success' %}
+                            <i class="fas fa-check-circle text-green-400"></i>
+                        {% else %}
+                            <i class="fas fa-exclamation-circle text-red-400"></i>
+                        {% endif %}
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-sm {% if message.tags == 'success' %}text-green-800{% else %}text-red-800{% endif %}">
+                            {{ message }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <!-- Abonnement actuel -->
+    {% if current_subscription %}
+        <div class="bg-white shadow rounded-lg mb-6">
+            <div class="px-4 py-5 sm:p-6">
+                <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">
+                    Abonnement actuel
+                </h3>
+                
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <div class="h-12 w-12 rounded-lg bg-blue-100 flex items-center justify-center">
+                                <i class="fas fa-crown text-blue-600 text-xl"></i>
+                            </div>
+                        </div>
+                        <div class="ml-4">
+                            <div class="flex items-center">
+                                <h4 class="text-lg font-medium text-gray-900">{{ current_subscription.plan.name }}</h4>
+                                <span class="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
+                                    {% if current_subscription.status == 'active' %}bg-green-100 text-green-800
+                                    {% elif current_subscription.status == 'suspended' %}bg-yellow-100 text-yellow-800
+                                    {% elif current_subscription.status == 'cancelled' %}bg-red-100 text-red-800
+                                    {% elif current_subscription.status == 'expired' %}bg-gray-100 text-gray-800
+                                    {% endif %}">
+                                    {% if current_subscription.status == 'active' %}
+                                        <i class="fas fa-check-circle mr-1"></i>Actif
+                                    {% elif current_subscription.status == 'suspended' %}
+                                        <i class="fas fa-pause-circle mr-1"></i>Suspendu
+                                    {% elif current_subscription.status == 'cancelled' %}
+                                        <i class="fas fa-times-circle mr-1"></i>Annulé
+                                    {% elif current_subscription.status == 'expired' %}
+                                        <i class="fas fa-clock mr-1"></i>Expiré
+                                    {% endif %}
+                                </span>
+                            </div>
+                            <p class="text-sm text-gray-500">{{ current_subscription.plan.description }}</p>
+                            <div class="mt-2 text-sm text-gray-600">
+                                <span class="font-medium">{{ current_subscription.plan.price }}€</span> / {{ current_subscription.plan.get_billing_cycle_display|lower }}
+                            </div>
+                            <div class="mt-1 text-xs text-gray-500">
+                                {% if current_subscription.next_billing_date %}
+                                    Prochaine facturation : {{ current_subscription.next_billing_date|date:"d/m/Y" }}
+                                {% endif %}
+                                {% if current_subscription.end_date %}
+                                    • Expire le : {{ current_subscription.end_date|date:"d/m/Y" }}
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex flex-col space-y-2">
+                        {% if current_subscription.status == 'active' %}
+                            <a href="{% url 'subscription:plans' %}" 
+                               class="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200">
+                                <i class="fas fa-arrow-up mr-2"></i>
+                                Changer de plan
+                            </a>
+                            <button onclick="cancelSubscription()"
+                                    class="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200">
+                                <i class="fas fa-times mr-2"></i>
+                                Annuler
+                            </button>
+                        {% elif current_subscription.status == 'cancelled' and current_subscription.end_date > today %}
+                            <button onclick="renewSubscription()"
+                                    class="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-green-700 bg-green-100 hover:bg-green-200">
+                                <i class="fas fa-redo mr-2"></i>
+                                Renouveler
+                            </button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% else %}
+        <!-- Aucun abonnement actuel -->
+        <div class="bg-white shadow rounded-lg mb-6">
+            <div class="px-4 py-12 text-center">
+                <i class="fas fa-credit-card text-gray-400 text-4xl mb-4"></i>
+                <h3 class="text-lg font-medium text-gray-900 mb-2">Aucun abonnement actif</h3>
+                <p class="text-gray-500 mb-4">Vous n'avez actuellement aucun abonnement actif. Découvrez nos plans pour commencer.</p>
+                <a href="{% url 'subscription:plans' %}" 
+                   class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700">
+                    <i class="fas fa-eye mr-2"></i>
+                    Voir les plans disponibles
+                </a>
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- Historique des abonnements -->
+    {% if subscription_history %}
+        <div class="bg-white shadow rounded-lg">
+            <div class="px-4 py-5 sm:px-6">
+                <h3 class="text-lg leading-6 font-medium text-gray-900">
+                    Historique des abonnements
+                </h3>
+                <p class="mt-1 max-w-2xl text-sm text-gray-500">
+                    Consultez l'historique de tous vos abonnements
+                </p>
+            </div>
+            <ul class="divide-y divide-gray-200">
+                {% for subscription in subscription_history %}
+                    <li class="px-4 py-4 sm:px-6">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0">
+                                    <div class="h-8 w-8 rounded-lg bg-gray-100 flex items-center justify-center">
+                                        <i class="fas fa-history text-gray-600"></i>
+                                    </div>
+                                </div>
+                                <div class="ml-4">
+                                    <div class="flex items-center">
+                                        <h4 class="text-sm font-medium text-gray-900">{{ subscription.plan.name }}</h4>
+                                        <span class="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
+                                            {% if subscription.status == 'active' %}bg-green-100 text-green-800
+                                            {% elif subscription.status == 'suspended' %}bg-yellow-100 text-yellow-800
+                                            {% elif subscription.status == 'cancelled' %}bg-red-100 text-red-800
+                                            {% elif subscription.status == 'expired' %}bg-gray-100 text-gray-800
+                                            {% endif %}">
+                                            {% if subscription.status == 'active' %}
+                                                Actif
+                                            {% elif subscription.status == 'suspended' %}
+                                                Suspendu
+                                            {% elif subscription.status == 'cancelled' %}
+                                                Annulé
+                                            {% elif subscription.status == 'expired' %}
+                                                Expiré
+                                            {% endif %}
+                                        </span>
+                                    </div>
+                                    <div class="text-sm text-gray-500">
+                                        {{ subscription.plan.price }}€ / {{ subscription.plan.get_billing_cycle_display|lower }}
+                                    </div>
+                                    <div class="text-xs text-gray-400">
+                                        Du {{ subscription.start_date|date:"d/m/Y" }}
+                                        {% if subscription.end_date %}
+                                            au {{ subscription.end_date|date:"d/m/Y" }}
+                                        {% else %}
+                                            (en cours)
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="text-sm text-gray-500">
+                                {% if subscription == current_subscription %}
+                                    <span class="text-blue-600 font-medium">Abonnement actuel</span>
+                                {% else %}
+                                    Durée : 
+                                    {% if subscription.end_date %}
+                                        {{ subscription.start_date|timesince:subscription.end_date }}
+                                    {% else %}
+                                        {{ subscription.start_date|timesince }}
+                                    {% endif %}
+                                {% endif %}
+                            </div>
+                        </div>
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+    {% endif %}
+</div>
+
+<script>
+function cancelSubscription() {
+    if (confirm('Êtes-vous sûr de vouloir annuler votre abonnement ? Cette action ne peut pas être annulée.')) {
+        window.location.href = '{% url "subscription:cancel" %}';
+    }
+}
+
+function renewSubscription() {
+    if (confirm('Voulez-vous renouveler votre abonnement ?')) {
+        window.location.href = '{% url "subscription:renew" %}';
+    }
+}
+</script>
+{% endblock %}
