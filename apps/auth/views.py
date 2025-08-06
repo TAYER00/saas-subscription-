@@ -569,37 +569,19 @@ def migrate_user_to_free(request, user_id):
             
             old_plan = current_subscription.plan
             
-            # Vérifier s'il existe déjà un abonnement gratuit pour éviter la contrainte unique
-            existing_free_subscription = Subscription.objects.filter(
-                user=user,
-                plan=free_plan,
-                status='active'
-            ).first()
+            # Modifier l'abonnement existant au lieu de créer un nouveau (évite la contrainte unique)
+            old_plan = current_subscription.plan
             
-            if existing_free_subscription:
-                # Si un abonnement gratuit actif existe déjà, annuler l'abonnement payant seulement
-                current_subscription.status = 'cancelled'
-                current_subscription.save()
-                new_subscription = existing_free_subscription
-            else:
-                # Annuler l'abonnement payant actuel
-                current_subscription.status = 'cancelled'
-                current_subscription.save()
-                
-                # Créer le nouvel abonnement gratuit
-                new_subscription = Subscription.objects.create(
-                    user=user,
-                    plan=free_plan,
-                    status='active',
-                    start_date=timezone.now(),
-                    amount_paid=0.00,
-                    payment_method='Rétrogradation administrative'
-                )
-                
-                # Les abonnements gratuits n'ont pas de date de fin
-                new_subscription.end_date = None
-                new_subscription.next_billing_date = None
-                new_subscription.save()
+            # Passer au plan gratuit en modifiant l'abonnement existant
+            current_subscription.plan = free_plan
+            current_subscription.amount_paid = 0.00
+            current_subscription.payment_method = 'Rétrogradation administrative'
+            current_subscription.start_date = timezone.now()
+            current_subscription.end_date = None
+            current_subscription.next_billing_date = None
+            current_subscription.save()
+            
+            new_subscription = current_subscription
             
             # Enregistrer l'historique
             SubscriptionHistory.objects.create(

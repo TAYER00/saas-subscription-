@@ -154,7 +154,45 @@
     .table {
         width: 100%;
         min-width: 100%;
+        table-layout: fixed;
     }
+    
+    /* Styles pour le redimensionnement des colonnes */
+    .table thead th {
+        position: relative;
+        min-width: 120px;
+        resize: horizontal;
+        overflow: hidden;
+    }
+    
+    .table thead th .resize-handle {
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 5px;
+        height: 100%;
+        background: rgba(255, 255, 255, 0.3);
+        cursor: col-resize;
+        opacity: 0;
+        transition: opacity 0.2s;
+    }
+    
+    .table thead th:hover .resize-handle {
+        opacity: 1;
+    }
+    
+    .table thead th .resize-handle:hover {
+        background: rgba(255, 255, 255, 0.6);
+    }
+    
+    /* Largeurs par défaut des colonnes */
+    .table thead th:nth-child(1) { width: 30%; }
+    .table thead th:nth-child(2) { width: 15%; }
+    .table thead th:nth-child(3) { width: 12%; }
+    .table thead th:nth-child(4) { width: 10%; }
+    .table thead th:nth-child(5) { width: 15%; }
+    .table thead th:nth-child(6) { width: 10%; }
+    .table thead th:nth-child(7) { width: 8%; }
     
     .table-header {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -574,13 +612,13 @@
             <table class="table mb-0">
                 <thead>
                     <tr>
-                        <th><i class="fas fa-file-alt me-2"></i>Titre & Organisation</th>
-                        <th><i class="fas fa-hashtag me-2"></i>Référence</th>
-                        <th><i class="fas fa-tags me-2"></i>Catégorie</th>
-                        <th><i class="fas fa-flag me-2"></i>Statut</th>
-                        <th><i class="fas fa-calendar-alt me-2"></i>Échéance</th>
-                        <th><i class="fas fa-globe me-2"></i>Source</th>
-                        <th><i class="fas fa-cog me-2"></i>Actions</th>
+                        <th><i class="fas fa-file-alt me-2"></i>Titre & Organisation<div class="resize-handle"></div></th>
+                        <th><i class="fas fa-hashtag me-2"></i>Référence<div class="resize-handle"></div></th>
+                        <th><i class="fas fa-tags me-2"></i>Catégorie<div class="resize-handle"></div></th>
+                        <th><i class="fas fa-flag me-2"></i>Statut<div class="resize-handle"></div></th>
+                        <th><i class="fas fa-calendar-alt me-2"></i>Échéance<div class="resize-handle"></div></th>
+                        <th><i class="fas fa-globe me-2"></i>Source<div class="resize-handle"></div></th>
+                        <th><i class="fas fa-cog me-2"></i>Actions<div class="resize-handle"></div></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -732,6 +770,69 @@ document.addEventListener('DOMContentLoaded', function() {
             filterForm.submit();
         }, 500);
     });
+    
+    // Fonctionnalité de redimensionnement des colonnes
+    initColumnResize();
 });
+
+function initColumnResize() {
+    const table = document.querySelector('.table');
+    const headers = table.querySelectorAll('thead th');
+    let isResizing = false;
+    let currentColumn = null;
+    let startX = 0;
+    let startWidth = 0;
+    
+    headers.forEach((header, index) => {
+        const resizeHandle = header.querySelector('.resize-handle');
+        if (!resizeHandle) return;
+        
+        resizeHandle.addEventListener('mousedown', function(e) {
+            isResizing = true;
+            currentColumn = header;
+            startX = e.pageX;
+            startWidth = parseInt(window.getComputedStyle(header).width, 10);
+            
+            document.body.style.cursor = 'col-resize';
+            document.body.style.userSelect = 'none';
+            
+            e.preventDefault();
+        });
+    });
+    
+    document.addEventListener('mousemove', function(e) {
+        if (!isResizing || !currentColumn) return;
+        
+        const width = startWidth + e.pageX - startX;
+        const minWidth = 80; // Largeur minimale
+        const maxWidth = 500; // Largeur maximale
+        
+        if (width >= minWidth && width <= maxWidth) {
+            const percentage = (width / table.offsetWidth) * 100;
+            currentColumn.style.width = percentage + '%';
+            
+            // Sauvegarder la largeur dans localStorage
+            const columnIndex = Array.from(currentColumn.parentNode.children).indexOf(currentColumn);
+            localStorage.setItem(`column-width-${columnIndex}`, percentage + '%');
+        }
+    });
+    
+    document.addEventListener('mouseup', function() {
+        if (isResizing) {
+            isResizing = false;
+            currentColumn = null;
+            document.body.style.cursor = '';
+            document.body.style.userSelect = '';
+        }
+    });
+    
+    // Restaurer les largeurs sauvegardées
+    headers.forEach((header, index) => {
+        const savedWidth = localStorage.getItem(`column-width-${index}`);
+        if (savedWidth) {
+            header.style.width = savedWidth;
+        }
+    });
+}
 </script>
 {% endblock %}
