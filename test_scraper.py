@@ -1,184 +1,128 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
-Script de test pour vérifier le fonctionnement du scraper avec Django
+Script pour exécuter tous les scrapers en parallèle
+Auteur: Assistant IA
+Date: 2025
 """
 
 import os
 import sys
-import django
-from django.conf import settings
+import subprocess
+import threading
+import time
+from datetime import datetime
 
-# Configuration Django
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings.dev')
-django.setup()
+# Ajouter le répertoire racine au path Python
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from apps.tenders.models import TenderSite, Tender, ScrapingLog
-from django.utils import timezone
-import importlib.util
+# Liste des scrapers à exécuter
+SCRAPERS = [
+    "scrapers\\adm\\scraper.py",
+    "scrapers\\cgi\\scraper.py", 
+    "scrapers\\marchespublics\\scraper.py",
+    "scrapers\\marsamaroc\\scraper.py",
+    "scrapers\\offresonline\\scraper.py",
+    "scrapers\\royalairmaroc\\scraper.py"
+]
 
-def test_scraper_integration():
+def run_scraper(scraper_path):
     """
-    Test l'intégration du scraper avec Django
+    Exécute un scraper individuel
     """
-    print("🧪 Test de l'intégration du scraper avec Django")
-    print("=" * 50)
-    
-    # 1. Vérifier les modèles Django
-    print("\n1. Vérification des modèles Django...")
-    
-    # Compter les objets existants
-    sites_count = TenderSite.objects.count()
-    tenders_count = Tender.objects.count()
-    logs_count = ScrapingLog.objects.count()
-    
-    print(f"   - Sites: {sites_count}")
-    print(f"   - Appels d'offres: {tenders_count}")
-    print(f"   - Logs de scraping: {logs_count}")
-    
-    # 2. Créer un site de test
-    print("\n2. Création d'un site de test...")
-    
-    test_site, created = TenderSite.objects.get_or_create(
-        name="marchespublics",
-        defaults={
-            'url': 'https://www.marchespublics.gov.ma',
-            'is_active': True,
-            'description': 'Site officiel des marchés publics du Maroc'
-        }
-    )
-    
-    if created:
-        print(f"   ✅ Site créé: {test_site.name}")
-    else:
-        print(f"   ℹ️  Site existant: {test_site.name}")
-    
-    # 3. Vérifier le scraper
-    print("\n3. Vérification du scraper...")
-    
-    scraper_path = os.path.join('Backend', 'scrapers', 'marchespublics', 'scraper.py')
-    
-    if os.path.exists(scraper_path):
-        print(f"   ✅ Scraper trouvé: {scraper_path}")
-        
-        try:
-            # Charger le module scraper
-            spec = importlib.util.spec_from_file_location(
-                "marchespublics_scraper", 
-                scraper_path
-            )
-            scraper_module = importlib.util.module_from_spec(spec)
-            spec.loader.exec_module(scraper_module)
-            
-            # Rechercher la classe scraper
-            scraper_class = None
-            for attr_name in dir(scraper_module):
-                attr = getattr(scraper_module, attr_name)
-                if (isinstance(attr, type) and 
-                    attr_name.lower().endswith('scraper') and 
-                    attr_name != 'BaseScraper'):
-                    scraper_class = attr
-                    break
-            
-            if scraper_class:
-                print(f"   ✅ Classe scraper trouvée: {scraper_class.__name__}")
-                
-                # Tester l'instanciation
-                try:
-                    scraper = scraper_class()
-                    print(f"   ✅ Instanciation réussie")
-                    
-                    # Vérifier les méthodes requises
-                    if hasattr(scraper, 'scrape'):
-                        print(f"   ✅ Méthode 'scrape' disponible")
-                    else:
-                        print(f"   ❌ Méthode 'scrape' manquante")
-                        
-                except Exception as e:
-                    print(f"   ❌ Erreur d'instanciation: {e}")
-            else:
-                print(f"   ❌ Aucune classe scraper trouvée")
-                
-        except Exception as e:
-            print(f"   ❌ Erreur de chargement du module: {e}")
-    else:
-        print(f"   ❌ Scraper non trouvé: {scraper_path}")
-    
-    # 4. Test de création d'un log
-    print("\n4. Test de création d'un log de scraping...")
+    scraper_name = os.path.basename(os.path.dirname(scraper_path))
+    print(f"[{datetime.now().strftime('%H:%M:%S')}] Démarrage du scraper: {scraper_name}")
     
     try:
-        test_log = ScrapingLog.objects.create(
-            site=test_site,
-            status='completed',
-            started_at=timezone.now(),
-            completed_at=timezone.now(),
-            items_found=5,
-            items_new=3,
-            items_updated=2
+        # Configurer l'environnement pour gérer l'encodage UTF-8
+        env = os.environ.copy()
+        env['PYTHONIOENCODING'] = 'utf-8'
+        
+        # Exécuter le scraper
+        result = subprocess.run(
+            [sys.executable, scraper_path],
+            capture_output=True,
+            text=True,
+            encoding='utf-8',
+            errors='replace',
+            env=env,
+            cwd=os.path.dirname(os.path.abspath(__file__))
         )
-        print(f"   ✅ Log créé avec succès (ID: {test_log.id})")
         
-        # Supprimer le log de test
-        test_log.delete()
-        print(f"   🗑️  Log de test supprimé")
-        
+        if result.returncode == 0:
+            print(f"[{datetime.now().strftime('%H:%M:%S')}] ✅ {scraper_name} terminé avec succès")
+            if result.stdout:
+                print(f"[{scraper_name}] Output: {result.stdout.strip()}")
+        else:
+            print(f"[{datetime.now().strftime('%H:%M:%S')}] ❌ {scraper_name} a échoué")
+            if result.stderr:
+                print(f"[{scraper_name}] Erreur: {result.stderr.strip()}")
+                
     except Exception as e:
-        print(f"   ❌ Erreur de création du log: {e}")
-    
-    # 5. Résumé
-    print("\n" + "=" * 50)
-    print("📊 Résumé du test:")
-    print(f"   - Modèles Django: ✅ Fonctionnels")
-    print(f"   - Site de test: ✅ Créé/Vérifié")
-    
-    if os.path.exists(scraper_path):
-        print(f"   - Scraper: ✅ Disponible")
-    else:
-        print(f"   - Scraper: ❌ Non trouvé")
-    
-    print(f"   - Logs: ✅ Fonctionnels")
-    
-    print("\n🎉 Test terminé!")
-    
-    # Instructions pour lancer le scraper
-    print("\n📋 Pour lancer le scraper:")
-    print("   python manage.py run_scraper marchespublics")
-    print("   python manage.py run_scraper marchespublics --verbose")
-    print("   python manage.py run_scraper marchespublics --force")
+        print(f"[{datetime.now().strftime('%H:%M:%S')}] ❌ Erreur lors de l'exécution de {scraper_name}: {str(e)}")
 
-def show_database_stats():
+def main():
     """
-    Affiche les statistiques de la base de données
+    Fonction principale pour exécuter tous les scrapers
     """
-    print("\n📊 Statistiques de la base de données:")
-    print("-" * 40)
+    print("="*60)
+    print("🚀 DÉMARRAGE DE TOUS LES SCRAPERS")
+    print("="*60)
+    print(f"Heure de début: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"Nombre de scrapers à exécuter: {len(SCRAPERS)}")
+    print("="*60)
     
-    # Sites
-    sites = TenderSite.objects.all()
-    print(f"Sites ({sites.count()}):")
-    for site in sites:
-        tenders_count = site.tenders.count()
-        logs_count = site.scraping_logs.count()
-        print(f"  - {site.name}: {tenders_count} appels d'offres, {logs_count} logs")
+    # Vérifier que tous les fichiers scrapers existent
+    missing_scrapers = []
+    for scraper in SCRAPERS:
+        if not os.path.exists(scraper):
+            missing_scrapers.append(scraper)
     
-    # Appels d'offres par statut
-    print(f"\nAppels d'offres par statut:")
-    for status, label in Tender.STATUS_CHOICES:
-        count = Tender.objects.filter(status=status).count()
-        print(f"  - {label}: {count}")
+    if missing_scrapers:
+        print("⚠️  ATTENTION: Les scrapers suivants sont introuvables:")
+        for scraper in missing_scrapers:
+            print(f"   - {scraper}")
+        print("")
     
-    # Logs par statut
-    print(f"\nLogs de scraping par statut:")
-    for status, label in ScrapingLog.STATUS_CHOICES:
-        count = ScrapingLog.objects.filter(status=status).count()
-        print(f"  - {label}: {count}")
+    # Filtrer les scrapers existants
+    existing_scrapers = [s for s in SCRAPERS if os.path.exists(s)]
+    
+    if not existing_scrapers:
+        print("❌ Aucun scraper trouvé. Vérifiez les chemins.")
+        return
+    
+    start_time = time.time()
+    
+    # Créer et démarrer les threads pour chaque scraper
+    threads = []
+    for scraper in existing_scrapers:
+        thread = threading.Thread(target=run_scraper, args=(scraper,))
+        threads.append(thread)
+        thread.start()
+        # Petit délai entre les démarrages pour éviter la surcharge
+        time.sleep(0.5)
+    
+    # Attendre que tous les threads se terminent
+    for thread in threads:
+        thread.join()
+    
+    end_time = time.time()
+    duration = end_time - start_time
+    
+    print("="*60)
+    print("🏁 TOUS LES SCRAPERS TERMINÉS")
+    print("="*60)
+    print(f"Heure de fin: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"Durée totale: {duration:.2f} secondes")
+    print(f"Scrapers exécutés: {len(existing_scrapers)}")
+    print("="*60)
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     try:
-        test_scraper_integration()
-        show_database_stats()
+        main()
+    except KeyboardInterrupt:
+        print("\n⚠️  Interruption par l'utilisateur (Ctrl+C)")
+        print("Arrêt en cours...")
     except Exception as e:
-        print(f"❌ Erreur lors du test: {e}")
-        import traceback
-        traceback.print_exc()
+        print(f"❌ Erreur inattendue: {str(e)}")
         sys.exit(1)

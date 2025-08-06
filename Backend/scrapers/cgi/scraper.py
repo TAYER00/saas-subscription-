@@ -8,7 +8,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(
 
 # Import conditionnel pour éviter les erreurs Django
 try:
-    from scrapers.services import DeduplicationService
+    from scrapers.services import DeduplicationService, convert_date_to_standard_format
 except ImportError:
     # Fallback pour usage autonome
     class DeduplicationService:
@@ -19,6 +19,9 @@ except ImportError:
         @staticmethod
         def get_site_name_from_scraper_class(scraper_class):
             return 'CGI E-Sourcing'
+    
+    def convert_date_to_standard_format(date_text):
+        return date_text  # Fallback simple
 
 class CGIESourcingScraper:
     def __init__(self):
@@ -142,7 +145,12 @@ class CGIESourcingScraper:
                     for element in tender_elements[1:]:
                         tender = {}
                         tender['objet'] = element.query_selector('td:nth-child(2)').inner_text().strip()
-                        tender['date_limite'] = element.query_selector('td:nth-child(4)').inner_text().strip()
+                        
+                        # Extraire et convertir la date
+                        date_text = element.query_selector('td:nth-child(4)').inner_text().strip()
+                        formatted_date = convert_date_to_standard_format(date_text)
+                        tender['date_limite'] = formatted_date
+                        
                         tenders.append(tender)
                     
                     # Filtrer les nouveaux appels d'offres (déduplication)

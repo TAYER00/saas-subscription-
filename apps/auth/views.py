@@ -569,24 +569,37 @@ def migrate_user_to_free(request, user_id):
             
             old_plan = current_subscription.plan
             
-            # Annuler l'abonnement payant actuel
-            current_subscription.status = 'cancelled'
-            current_subscription.save()
-            
-            # Créer le nouvel abonnement gratuit
-            new_subscription = Subscription.objects.create(
+            # Vérifier s'il existe déjà un abonnement gratuit pour éviter la contrainte unique
+            existing_free_subscription = Subscription.objects.filter(
                 user=user,
                 plan=free_plan,
-                status='active',
-                start_date=timezone.now(),
-                amount_paid=0.00,
-                payment_method='Rétrogradation administrative'
-            )
+                status='active'
+            ).first()
             
-            # Les abonnements gratuits n'ont pas de date de fin
-            new_subscription.end_date = None
-            new_subscription.next_billing_date = None
-            new_subscription.save()
+            if existing_free_subscription:
+                # Si un abonnement gratuit actif existe déjà, annuler l'abonnement payant seulement
+                current_subscription.status = 'cancelled'
+                current_subscription.save()
+                new_subscription = existing_free_subscription
+            else:
+                # Annuler l'abonnement payant actuel
+                current_subscription.status = 'cancelled'
+                current_subscription.save()
+                
+                # Créer le nouvel abonnement gratuit
+                new_subscription = Subscription.objects.create(
+                    user=user,
+                    plan=free_plan,
+                    status='active',
+                    start_date=timezone.now(),
+                    amount_paid=0.00,
+                    payment_method='Rétrogradation administrative'
+                )
+                
+                # Les abonnements gratuits n'ont pas de date de fin
+                new_subscription.end_date = None
+                new_subscription.next_billing_date = None
+                new_subscription.save()
             
             # Enregistrer l'historique
             SubscriptionHistory.objects.create(

@@ -8,7 +8,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(
 
 # Import conditionnel pour éviter les erreurs Django
 try:
-    from scrapers.services import DeduplicationService
+    from scrapers.services import DeduplicationService, convert_date_to_standard_format
 except ImportError:
     # Fallback pour usage autonome
     class DeduplicationService:
@@ -19,6 +19,9 @@ except ImportError:
         @staticmethod
         def get_site_name_from_scraper_class(scraper_class):
             return 'Offres Online'
+    
+    def convert_date_to_standard_format(date_text):
+        return date_text  # Fallback simple
 
 class OffresonlineScraper:
     def __init__(self):
@@ -83,9 +86,13 @@ class OffresonlineScraper:
                     
                     if date_elem.count() > 0:
                         date_text = date_elem.text_content()
-                        tender['date_limite'] = date_text.strip() if date_text else 'N/A'
+                        if date_text and date_text.strip():
+                            formatted_date = convert_date_to_standard_format(date_text.strip())
+                            tender['date_limite'] = formatted_date
+                        else:
+                            tender['date_limite'] = None
                     else:
-                        tender['date_limite'] = 'N/A'
+                        tender['date_limite'] = None
                     
                     # Extraction du lien dans l'attribut onclick
                     onclick = objet_elem.get_attribute('onclick')

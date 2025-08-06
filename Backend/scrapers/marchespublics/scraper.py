@@ -8,7 +8,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(
 
 # Import conditionnel pour éviter les erreurs Django
 try:
-    from scrapers.services import DeduplicationService
+    from scrapers.services import DeduplicationService, convert_date_to_standard_format
 except ImportError:
     # Fallback pour usage autonome
     class DeduplicationService:
@@ -19,6 +19,9 @@ except ImportError:
         @staticmethod
         def get_site_name_from_scraper_class(scraper_class):
             return 'Marchés Publics'
+    
+    def convert_date_to_standard_format(date_text):
+        return date_text  # Fallback simple
 
 class MarchesPublicsScraper:
     def __init__(self):
@@ -86,9 +89,11 @@ class MarchesPublicsScraper:
                     # Extract deadline date
                     deadline_elem = row.query_selector('#ctl0_CONTENU_PAGE_resultSearch_detailCons_ctl1_ctl0_dateHeureLimiteRemisePlis')
                     if deadline_elem:
-                        tender['date_limite'] = deadline_elem.inner_text().strip()
+                        date_text = deadline_elem.inner_text().strip()
+                        formatted_date = convert_date_to_standard_format(date_text)
+                        tender['date_limite'] = formatted_date
                     else:
-                        tender['date_limite'] = 'N/A'
+                        tender['date_limite'] = None
                     
                     if tender and 'objet' in tender:
                         tenders.append(tender)

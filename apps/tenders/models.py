@@ -103,6 +103,11 @@ class Tender(models.Model):
         return True
 
     @property
+    def deadline(self):
+        """Retourne la date limite de soumission."""
+        return self.deadline_date
+    
+    @property
     def days_remaining(self):
         """Calcule le nombre de jours restants avant la date limite."""
         if not self.deadline_date:

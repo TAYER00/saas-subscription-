@@ -15,10 +15,38 @@
     
     .info-card {
         background: white;
-        border-radius: 10px;
+        border-radius: 15px;
         padding: 1.5rem;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         margin-bottom: 1.5rem;
+        box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        border: 1px solid #e9ecef;
+        transition: all 0.3s ease;
+    }
+    
+    .info-label {
+        font-weight: 600;
+        color: #495057;
+        margin-bottom: 0.5rem;
+        font-size: 0.9rem;
+    }
+    
+    .info-value {
+        margin-bottom: 1rem;
+        color: #212529;
+        font-size: 0.95rem;
+    }
+    
+    @media (min-width: 992px) {
+        .row.g-4 {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        
+        .col-lg-3 {
+            flex: 1;
+            min-width: 200px;
+        }
     }
     
     .status-badge {
@@ -118,7 +146,7 @@
 {% endblock %}
 
 {% block content %}
-<div class="container">
+<div class="container-fluid px-4" style="width: 100%; max-width: 100%;">
     <!-- En-tête -->
     <div class="tender-header text-center">
         <h1 class="mb-3">📄 {{ tender.title }}</h1>
@@ -150,8 +178,8 @@
             <div class="info-card">
                 <h3 class="mb-4">📋 Informations Générales</h3>
                 
-                <div class="row">
-                    <div class="col-md-6">
+                <div class="row g-4">
+                    <div class="col-lg-3 col-md-6">
                         <div class="info-label">🏢 Organisme</div>
                         <div class="info-value">{{ tender.organization|default:"Non spécifié" }}</div>
                         
@@ -173,7 +201,7 @@
                         </div>
                     </div>
                     
-                    <div class="col-md-6">
+                    <div class="col-lg-3 col-md-6">
                         <div class="info-label">⏰ Date Limite</div>
                         <div class="info-value">
                             {% if tender.deadline_date %}
@@ -200,7 +228,9 @@
                                 Non spécifiée
                             {% endif %}
                         </div>
-                        
+                    </div>
+                    
+                    <div class="col-lg-3 col-md-6">
                         <div class="info-label">📊 Statut</div>
                         <div class="info-value">
                             <span class="status-badge status-{{ tender.status }}">
@@ -238,7 +268,7 @@
         <!-- Sidebar -->
         <div class="col-md-4">
             <!-- Informations complémentaires -->
-            <div class="info-card">
+            <div class="info-card" style="position: sticky; top: 20px;">
                 <h4 class="mb-3">ℹ️ Informations Complémentaires</h4>
                 
                 {% if tender.location %}

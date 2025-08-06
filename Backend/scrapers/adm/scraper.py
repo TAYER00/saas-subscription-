@@ -9,7 +9,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(
 
 # Import conditionnel pour éviter les erreurs Django
 try:
-    from scrapers.services import DeduplicationService
+    from scrapers.services import DeduplicationService, convert_date_to_standard_format
 except ImportError:
     # Fallback pour usage autonome
     class DeduplicationService:
@@ -20,6 +20,9 @@ except ImportError:
         @staticmethod
         def get_site_name_from_scraper_class(scraper_class):
             return 'ADM'
+    
+    def convert_date_to_standard_format(date_text):
+        return date_text  # Fallback simple
 
 class AdmScraper:
     def __init__(self):
@@ -86,8 +89,8 @@ class AdmScraper:
                 seen_objects = set()  # Pour suivre les objets déjà vus
                 tender_items = page.query_selector_all('div.contentColumn')
                 
-                # Scraper les liens pour les indices 2 à 7
-                for index in range(2, 8):  # Modifié pour inclure jusqu'à l'index 7
+                # Scraper les liens pour les indices 2 à 9
+                for index in range(2, 10):  # Modifié pour inclure jusqu'à l'index 9
                     try:
                         # Sélectionner l'élément de l'appel d'offres
                         item = page.query_selector(f'#tabNav > div.p-2 > div.content > div:nth-child({index})')
@@ -96,7 +99,10 @@ class AdmScraper:
                             continue
 
                         objet = item.query_selector('div.info.p-card div.p-objet')
-                        date_limite = item.query_selector('div.leftColumn div.limita')
+                        
+                        # Utiliser le sélecteur CSS spécifique pour la date limite
+                        date_limite_selector = f'#tabNav > div.p-2 > div.content > div:nth-child({index}) > div > div > div.leftColumn.leftColumn-green > div:nth-child(2) > strong:nth-child(1) > div > span'
+                        date_limite = page.query_selector(date_limite_selector)
                         
                         # Extraire le lien avec le sélecteur incrémenté
                         link = 'N/A'
@@ -111,16 +117,19 @@ class AdmScraper:
                         # Nettoyer et formater les données
                         objet_text = objet.text_content().strip() if objet else 'N/A'
                         
-                        # Extraire la date limite
+                        # Extraire la date limite avec le nouveau sélecteur
                         date_text = 'N/A'
                         if date_limite:
-                            # Chercher d'abord dans le span
-                            date_span = date_limite.query_selector('span')
-                            if date_span:
-                                date_text = date_span.text_content().strip()
-                            # Si pas de span ou texte vide, prendre tout le contenu
-                            if not date_text:
-                                date_text = date_limite.text_content().strip()
+                            date_text = date_limite.text_content().strip()
+                        else:
+                            # Fallback vers l'ancien sélecteur si le nouveau ne fonctionne pas
+                            fallback_date = item.query_selector('div.leftColumn div.limita')
+                            if fallback_date:
+                                date_span = fallback_date.query_selector('span')
+                                if date_span:
+                                    date_text = date_span.text_content().strip()
+                                else:
+                                    date_text = fallback_date.text_content().strip()
                         
                         # Supprimer les labels redondants
                         objet_text = objet_text.replace('Objet\n                                                        : \n                                                    ', '')
@@ -133,9 +142,13 @@ class AdmScraper:
                         # Vérifier si cet objet a déjà été vu
                         if objet_text not in seen_objects:
                             seen_objects.add(objet_text)
+                            
+                            # Convertir la date au format standard
+                            formatted_date = convert_date_to_standard_format(date_text)
+                            
                             tender = {
                                 'objet': objet_text,
-                                'date_limite': date_text,
+                                'date_limite': formatted_date,
                                 'link': link
                             }
                             tenders.append(tender)

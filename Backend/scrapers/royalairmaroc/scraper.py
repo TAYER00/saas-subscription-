@@ -9,7 +9,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(
 
 # Import conditionnel pour éviter les erreurs Django
 try:
-    from scrapers.services import DeduplicationService
+    from scrapers.services import DeduplicationService, convert_date_to_standard_format
 except ImportError:
     # Fallback pour usage autonome
     class DeduplicationService:
@@ -20,6 +20,9 @@ except ImportError:
         @staticmethod
         def get_site_name_from_scraper_class(scraper_class):
             return 'Royal Air Maroc'
+    
+    def convert_date_to_standard_format(date_text):
+        return date_text  # Fallback simple
 
 class RoyalAirMarocScraper:
     def __init__(self):
@@ -135,10 +138,12 @@ class RoyalAirMarocScraper:
                                 print(f"Extraction de la date limite pour la ligne {index}...")
                                 date_elem = row.query_selector('td.col_INTEREST_TIME_LIMIT.tdMedium')
                                 if date_elem:
-                                    tender['date_limite'] = date_elem.inner_text().strip()
+                                    date_text = date_elem.inner_text().strip()
+                                    formatted_date = convert_date_to_standard_format(date_text)
+                                    tender['date_limite'] = formatted_date
                                     print(f"Date limite trouvée: {tender['date_limite']}")
                                 else:
-                                    tender['date_limite'] = 'N/A'
+                                    tender['date_limite'] = None
                                 
                                 # Extraire le lien
                                 print(f"Extraction du lien pour la ligne {index}...")
