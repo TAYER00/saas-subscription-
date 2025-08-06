@@ -1,0 +1,387 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Tableau de Bord - Appels d'Offres{% endblock %}
+
+{% block extra_css %}
+<style>
+    .dashboard-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem 0;
+        margin-bottom: 2rem;
+        border-radius: 10px;
+    }
+    
+    .stats-card {
+        background: white;
+        border-radius: 10px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        transition: transform 0.3s ease;
+    }
+    
+    .stats-card:hover {
+        transform: translateY(-5px);
+    }
+    
+    .stats-number {
+        font-size: 2.5rem;
+        font-weight: bold;
+        color: #667eea;
+    }
+    
+    .filters-section {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 10px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        margin-bottom: 2rem;
+    }
+    
+    .table-container {
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+    }
+    
+    .table thead th {
+        background: #667eea;
+        color: white;
+        border: none;
+        padding: 1rem;
+        font-weight: 600;
+    }
+    
+    .table tbody tr {
+        transition: background-color 0.3s ease;
+    }
+    
+    .table tbody tr:hover {
+        background-color: #f8f9ff;
+    }
+    
+    .status-badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.875rem;
+        font-weight: 500;
+    }
+    
+    .status-open {
+        background-color: #d1fae5;
+        color: #065f46;
+    }
+    
+    .status-closed {
+        background-color: #fee2e2;
+        color: #991b1b;
+    }
+    
+    .status-pending {
+        background-color: #fef3c7;
+        color: #92400e;
+    }
+    
+    .btn-filter {
+        background: #667eea;
+        color: white;
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: 5px;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-filter:hover {
+        background: #5a67d8;
+        transform: translateY(-2px);
+    }
+    
+    .pagination {
+        justify-content: center;
+    }
+    
+    .page-link {
+        color: #667eea;
+        border-color: #667eea;
+    }
+    
+    .page-link:hover {
+        background-color: #667eea;
+        border-color: #667eea;
+        color: white;
+    }
+    
+    .page-item.active .page-link {
+        background-color: #667eea;
+        border-color: #667eea;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <!-- En-tête du tableau de bord -->
+    <div class="dashboard-header text-center">
+        <h1 class="display-4 mb-3">
+            <i class="fas fa-file-contract me-3"></i>
+            Tableau de Bord - Appels d'Offres
+        </h1>
+        <p class="lead mb-0">Gérez et suivez tous vos appels d'offres en temps réel</p>
+    </div>
+
+    <!-- Statistiques -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="stats-card text-center">
+                <div class="stats-number">{{ stats.total }}</div>
+                <div class="text-muted">Total des Appels d'Offres</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card text-center">
+                <div class="stats-number text-success">{{ stats.active }}</div>
+                <div class="text-muted">Appels d'Offres Actifs</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card text-center">
+                <div class="stats-number text-info">{{ stats.today }}</div>
+                <div class="text-muted">Nouveaux Aujourd'hui</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card text-center">
+                <div class="stats-number text-warning">{{ stats.this_week }}</div>
+                <div class="text-muted">Cette Semaine</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtres -->
+    <div class="filters-section">
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                <label for="search" class="form-label">Recherche</label>
+                <input type="text" class="form-control" id="search" name="search" 
+                       value="{{ current_filters.search }}" placeholder="Titre, organisation, référence...">
+            </div>
+            <div class="col-md-2">
+                <label for="status" class="form-label">Statut</label>
+                <select class="form-select" id="status" name="status">
+                    <option value="">Tous les statuts</option>
+                    {% for value, label in status_choices %}
+                        <option value="{{ value }}" {% if current_filters.status == value %}selected{% endif %}>
+                            {{ label }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="site" class="form-label">Site</label>
+                <select class="form-select" id="site" name="site">
+                    <option value="">Tous les sites</option>
+                    {% for site in sites %}
+                        <option value="{{ site.id }}" {% if current_filters.site == site.id|stringformat:'s' %}selected{% endif %}>
+                            {{ site.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="category" class="form-label">Catégorie</label>
+                <select class="form-select" id="category" name="category">
+                    <option value="">Toutes les catégories</option>
+                    {% for value, label in category_choices %}
+                        <option value="{{ value }}" {% if current_filters.category == value %}selected{% endif %}>
+                            {{ label }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="sort" class="form-label">Trier par</label>
+                <select class="form-select" id="sort" name="sort">
+                    <option value="-scraped_at" {% if current_filters.sort == '-scraped_at' %}selected{% endif %}>Plus récents</option>
+                    <option value="scraped_at" {% if current_filters.sort == 'scraped_at' %}selected{% endif %}>Plus anciens</option>
+                    <option value="deadline" {% if current_filters.sort == 'deadline' %}selected{% endif %}>Échéance proche</option>
+                    <option value="-deadline" {% if current_filters.sort == '-deadline' %}selected{% endif %}>Échéance lointaine</option>
+                    <option value="title" {% if current_filters.sort == 'title' %}selected{% endif %}>Titre A-Z</option>
+                    <option value="-title" {% if current_filters.sort == '-title' %}selected{% endif %}>Titre Z-A</option>
+                </select>
+            </div>
+            <div class="col-md-1 d-flex align-items-end">
+                <button type="submit" class="btn btn-filter w-100">
+                    <i class="fas fa-search"></i>
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Tableau des appels d'offres -->
+    <div class="table-container">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Titre</th>
+                        <th>Organisation</th>
+                        <th>Référence</th>
+                        <th>Catégorie</th>
+                        <th>Statut</th>
+                        <th>Échéance</th>
+                        <th>Site</th>
+                        <th>Date de Scraping</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for tender in page_obj %}
+                    <tr>
+                        <td>
+                            <strong>{{ tender.title|truncatechars:50 }}</strong>
+                            {% if tender.documents.exists %}
+                                <i class="fas fa-paperclip text-muted ms-1" title="Documents disponibles"></i>
+                            {% endif %}
+                        </td>
+                        <td>{{ tender.organization|truncatechars:30 }}</td>
+                        <td>
+                            <code>{{ tender.reference }}</code>
+                        </td>
+                        <td>
+                            <span class="badge bg-secondary">{{ tender.get_category_display }}</span>
+                        </td>
+                        <td>
+                            <span class="status-badge status-{{ tender.status }}">
+                                {{ tender.get_status_display }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if tender.deadline %}
+                                <span class="{% if tender.days_remaining <= 7 %}text-danger{% elif tender.days_remaining <= 14 %}text-warning{% else %}text-success{% endif %}">
+                                    {{ tender.deadline|date:"d/m/Y" }}
+                                    <small class="d-block">
+                                        {% if tender.days_remaining > 0 %}
+                                            {{ tender.days_remaining }} jour{{ tender.days_remaining|pluralize }}
+                                        {% elif tender.days_remaining == 0 %}
+                                            Aujourd'hui
+                                        {% else %}
+                                            Expiré
+                                        {% endif %}
+                                    </small>
+                                </span>
+                            {% else %}
+                                <span class="text-muted">Non définie</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge bg-info">{{ tender.site.name }}</span>
+                        </td>
+                        <td>
+                            <small class="text-muted">
+                                {{ tender.scraped_at|date:"d/m/Y H:i" }}
+                            </small>
+                        </td>
+                        <td>
+                            <a href="{% url 'tenders:detail' tender.id %}" class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                            {% if tender.url %}
+                                <a href="{{ tender.url }}" target="_blank" class="btn btn-sm btn-outline-secondary ms-1">
+                                    <i class="fas fa-external-link-alt"></i>
+                                </a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="9" class="text-center py-4">
+                            <div class="text-muted">
+                                <i class="fas fa-inbox fa-3x mb-3"></i>
+                                <h5>Aucun appel d'offres trouvé</h5>
+                                <p>Essayez de modifier vos critères de recherche.</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Pagination -->
+    {% if page_obj.has_other_pages %}
+    <nav aria-label="Navigation des pages" class="mt-4">
+        <ul class="pagination">
+            {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page=1">
+                        <i class="fas fa-angle-double-left"></i>
+                    </a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.previous_page_number }}">
+                        <i class="fas fa-angle-left"></i>
+                    </a>
+                </li>
+            {% endif %}
+
+            {% for num in page_obj.paginator.page_range %}
+                {% if page_obj.number == num %}
+                    <li class="page-item active">
+                        <span class="page-link">{{ num }}</span>
+                    </li>
+                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                    <li class="page-item">
+                        <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ num }}">
+                            {{ num }}
+                        </a>
+                    </li>
+                {% endif %}
+            {% endfor %}
+
+            {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.next_page_number }}">
+                        <i class="fas fa-angle-right"></i>
+                    </a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.paginator.num_pages }}">
+                        <i class="fas fa-angle-double-right"></i>
+                    </a>
+                </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Auto-submit des filtres lors du changement
+document.addEventListener('DOMContentLoaded', function() {
+    const filterForm = document.querySelector('.filters-section form');
+    const selects = filterForm.querySelectorAll('select');
+    
+    selects.forEach(select => {
+        select.addEventListener('change', function() {
+            filterForm.submit();
+        });
+    });
+    
+    // Recherche avec délai
+    const searchInput = document.getElementById('search');
+    let searchTimeout;
+    
+    searchInput.addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            filterForm.submit();
+        }, 500);
+    });
+});
+</script>
+{% endblock %}

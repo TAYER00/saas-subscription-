@@ -26,6 +26,7 @@ LOCAL_APPS = [
     'apps.auth',
     'apps.subscription',
     'apps.dashboard',
+    'apps.tenders',
 ]
 
 THIRD_PARTY_APPS = [

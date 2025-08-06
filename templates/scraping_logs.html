@@ -1,0 +1,373 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Logs de Scraping - Appels d'Offres{% endblock %}
+
+{% block extra_css %}
+<style>
+    .logs-header {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        color: white;
+        padding: 2rem 0;
+        margin-bottom: 2rem;
+        border-radius: 10px;
+    }
+    
+    .log-card {
+        background: white;
+        border-radius: 10px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        margin-bottom: 1.5rem;
+        border-left: 4px solid #dee2e6;
+        transition: all 0.3s ease;
+    }
+    
+    .log-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+    }
+    
+    .log-card.success {
+        border-left-color: #28a745;
+    }
+    
+    .log-card.failed {
+        border-left-color: #dc3545;
+    }
+    
+    .log-card.running {
+        border-left-color: #ffc107;
+        animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+        0% { opacity: 1; }
+        50% { opacity: 0.7; }
+        100% { opacity: 1; }
+    }
+    
+    .status-badge {
+        padding: 0.5rem 1rem;
+        border-radius: 25px;
+        font-size: 0.875rem;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+    
+    .status-completed {
+        background-color: #d4edda;
+        color: #155724;
+    }
+    
+    .status-failed {
+        background-color: #f8d7da;
+        color: #721c24;
+    }
+    
+    .status-running {
+        background-color: #fff3cd;
+        color: #856404;
+    }
+    
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+    
+    .stat-item {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 10px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        text-align: center;
+    }
+    
+    .stat-number {
+        font-size: 2rem;
+        font-weight: bold;
+        margin-bottom: 0.5rem;
+    }
+    
+    .stat-label {
+        color: #6c757d;
+        font-size: 0.875rem;
+    }
+    
+    .filters-section {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 10px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        margin-bottom: 2rem;
+    }
+    
+    .btn-refresh {
+        background: #28a745;
+        border: none;
+        color: white;
+        padding: 0.75rem 2rem;
+        border-radius: 25px;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-refresh:hover {
+        background: #218838;
+        transform: translateY(-2px);
+    }
+    
+    .duration {
+        font-family: 'Courier New', monospace;
+        background: #f8f9fa;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.875rem;
+    }
+    
+    .error-message {
+        background: #f8d7da;
+        border: 1px solid #f5c6cb;
+        color: #721c24;
+        padding: 1rem;
+        border-radius: 8px;
+        margin-top: 1rem;
+        font-family: 'Courier New', monospace;
+        font-size: 0.875rem;
+        white-space: pre-wrap;
+    }
+    
+    .log-meta {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 1rem;
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid #dee2e6;
+    }
+    
+    .meta-item {
+        text-align: center;
+    }
+    
+    .meta-value {
+        font-size: 1.25rem;
+        font-weight: bold;
+        color: #495057;
+    }
+    
+    .meta-label {
+        font-size: 0.875rem;
+        color: #6c757d;
+        margin-top: 0.25rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- En-tête -->
+    <div class="logs-header text-center">
+        <h1 class="mb-3">📊 Logs de Scraping</h1>
+        <p class="lead mb-0">Suivi des activités d'extraction des appels d'offres</p>
+    </div>
+    
+    <!-- Statistiques -->
+    <div class="stats-grid">
+        <div class="stat-item">
+            <div class="stat-number text-primary">{{ stats.total_logs }}</div>
+            <div class="stat-label">Total des Exécutions</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-number text-success">{{ stats.successful_logs }}</div>
+            <div class="stat-label">Succès</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-number text-danger">{{ stats.failed_logs }}</div>
+            <div class="stat-label">Échecs</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-number text-warning">{{ stats.running_logs }}</div>
+            <div class="stat-label">En Cours</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-number text-info">{{ stats.total_items }}</div>
+            <div class="stat-label">Items Extraits</div>
+        </div>
+    </div>
+    
+    <!-- Filtres -->
+    <div class="filters-section">
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                <label for="site" class="form-label">🌐 Site</label>
+                <select class="form-select" id="site" name="site">
+                    <option value="">Tous les sites</option>
+                    {% for site in sites %}
+                        <option value="{{ site.id }}" {% if current_filters.site == site.id|stringformat:"s" %}selected{% endif %}>
+                            {{ site.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="status" class="form-label">📊 Statut</label>
+                <select class="form-select" id="status" name="status">
+                    <option value="">Tous les statuts</option>
+                    <option value="completed" {% if current_filters.status == "completed" %}selected{% endif %}>Terminé</option>
+                    <option value="failed" {% if current_filters.status == "failed" %}selected{% endif %}>Échec</option>
+                    <option value="running" {% if current_filters.status == "running" %}selected{% endif %}>En cours</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="date_from" class="form-label">📅 Date de début</label>
+                <input type="date" class="form-control" id="date_from" name="date_from" value="{{ current_filters.date_from }}">
+            </div>
+            <div class="col-md-2">
+                <label for="date_to" class="form-label">📅 Date de fin</label>
+                <input type="date" class="form-control" id="date_to" name="date_to" value="{{ current_filters.date_to }}">
+            </div>
+            <div class="col-md-1 d-flex align-items-end">
+                <button type="submit" class="btn btn-refresh w-100">Filtrer</button>
+            </div>
+        </form>
+    </div>
+    
+    <!-- Bouton de rafraîchissement -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3>📋 Historique des Exécutions</h3>
+        <a href="{% url 'tenders:scraping_logs' %}" class="btn btn-refresh">
+            🔄 Actualiser
+        </a>
+    </div>
+    
+    <!-- Liste des logs -->
+    <div class="logs-container">
+        {% for log in page_obj %}
+        <div class="log-card {{ log.status }}">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <div>
+                    <h5 class="mb-2">
+                        🌐 {{ log.site.name }}
+                        <span class="status-badge status-{{ log.status }}">{{ log.get_status_display }}</span>
+                    </h5>
+                    <div class="text-muted">
+                        <small>
+                            🕒 Démarré le {{ log.started_at|date:"d/m/Y à H:i:s" }}
+                            {% if log.completed_at %}
+                                - Terminé le {{ log.completed_at|date:"d/m/Y à H:i:s" }}
+                            {% endif %}
+                        </small>
+                    </div>
+                </div>
+                <div class="text-end">
+                    {% if log.duration %}
+                        <div class="duration">⏱️ {{ log.duration }}</div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            {% if log.status == 'completed' and log.items_found %}
+            <div class="log-meta">
+                <div class="meta-item">
+                    <div class="meta-value text-primary">{{ log.items_found }}</div>
+                    <div class="meta-label">Trouvés</div>
+                </div>
+                <div class="meta-item">
+                    <div class="meta-value text-success">{{ log.items_new }}</div>
+                    <div class="meta-label">Nouveaux</div>
+                </div>
+                <div class="meta-item">
+                    <div class="meta-value text-info">{{ log.items_updated }}</div>
+                    <div class="meta-label">Mis à jour</div>
+                </div>
+            </div>
+            {% endif %}
+            
+            {% if log.error_message %}
+            <div class="error-message">
+                <strong>❌ Erreur:</strong>
+                {{ log.error_message }}
+            </div>
+            {% endif %}
+        </div>
+        {% empty %}
+        <div class="text-center py-5">
+            <div class="text-muted">
+                <h5>📭 Aucun log trouvé</h5>
+                <p>Aucune activité de scraping n'a encore été enregistrée.</p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    
+    <!-- Pagination -->
+    {% if page_obj.has_other_pages %}
+    <div class="d-flex justify-content-between align-items-center mt-4">
+        <div class="text-muted">
+            Affichage de {{ page_obj.start_index }} à {{ page_obj.end_index }} sur {{ page_obj.paginator.count }} logs
+        </div>
+        <nav aria-label="Navigation des pages">
+            <ul class="pagination mb-0">
+                {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.previous_page_number }}">
+                            ← Précédent
+                        </a>
+                    </li>
+                {% endif %}
+                
+                {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ num }}</span>
+                        </li>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ num }}">
+                                {{ num }}
+                            </a>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.next_page_number }}">
+                            Suivant →
+                        </a>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Auto-refresh pour les logs en cours
+document.addEventListener('DOMContentLoaded', function() {
+    const runningLogs = document.querySelectorAll('.log-card.running');
+    
+    if (runningLogs.length > 0) {
+        // Rafraîchir la page toutes les 30 secondes s'il y a des logs en cours
+        setTimeout(() => {
+            window.location.reload();
+        }, 30000);
+    }
+    
+    // Auto-submit des filtres
+    const filterForm = document.querySelector('.filters-section form');
+    const selectElements = filterForm.querySelectorAll('select, input[type="date"]');
+    
+    selectElements.forEach(element => {
+        element.addEventListener('change', function() {
+            filterForm.submit();
+        });
+    });
+});
+</script>
+{% endblock %}

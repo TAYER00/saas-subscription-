@@ -1,0 +1,338 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ tender.title }} - Détail Appel d'Offres{% endblock %}
+
+{% block extra_css %}
+<style>
+    .tender-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem 0;
+        margin-bottom: 2rem;
+        border-radius: 10px;
+    }
+    
+    .info-card {
+        background: white;
+        border-radius: 10px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        margin-bottom: 1.5rem;
+    }
+    
+    .status-badge {
+        padding: 0.5rem 1rem;
+        border-radius: 25px;
+        font-size: 1rem;
+        font-weight: 600;
+    }
+    
+    .status-open {
+        background-color: #d4edda;
+        color: #155724;
+    }
+    
+    .status-closed {
+        background-color: #f8d7da;
+        color: #721c24;
+    }
+    
+    .status-cancelled {
+        background-color: #fff3cd;
+        color: #856404;
+    }
+    
+    .status-awarded {
+        background-color: #cce5ff;
+        color: #004085;
+    }
+    
+    .deadline-urgent {
+        color: #dc3545;
+        font-weight: bold;
+    }
+    
+    .deadline-soon {
+        color: #fd7e14;
+        font-weight: bold;
+    }
+    
+    .deadline-normal {
+        color: #28a745;
+    }
+    
+    .info-label {
+        font-weight: 600;
+        color: #495057;
+        margin-bottom: 0.5rem;
+    }
+    
+    .info-value {
+        color: #212529;
+        margin-bottom: 1rem;
+    }
+    
+    .document-item {
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 0.5rem;
+        transition: all 0.3s ease;
+    }
+    
+    .document-item:hover {
+        background: #e9ecef;
+        transform: translateY(-2px);
+    }
+    
+    .btn-back {
+        background: #6c757d;
+        border: none;
+        color: white;
+        padding: 0.5rem 1.5rem;
+        border-radius: 25px;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-back:hover {
+        background: #5a6268;
+        transform: translateY(-2px);
+    }
+    
+    .btn-source {
+        background: #667eea;
+        border: none;
+        color: white;
+        padding: 0.75rem 2rem;
+        border-radius: 25px;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-source:hover {
+        background: #5a6fd8;
+        transform: translateY(-2px);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- En-tête -->
+    <div class="tender-header text-center">
+        <h1 class="mb-3">📄 {{ tender.title }}</h1>
+        <div class="d-flex justify-content-center align-items-center gap-3">
+            <span class="status-badge status-{{ tender.status }}">
+                {{ tender.get_status_display }}
+            </span>
+            {% if tender.reference %}
+                <span class="badge bg-light text-dark">Réf: {{ tender.reference }}</span>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Boutons d'action -->
+    <div class="d-flex justify-content-between mb-4">
+        <a href="{% url 'tenders:dashboard' %}" class="btn btn-back">
+            ← Retour au tableau de bord
+        </a>
+        {% if tender.source_url %}
+            <a href="{{ tender.source_url }}" target="_blank" class="btn btn-source">
+                🔗 Voir sur le site source
+            </a>
+        {% endif %}
+    </div>
+    
+    <div class="row">
+        <!-- Informations principales -->
+        <div class="col-md-8">
+            <div class="info-card">
+                <h3 class="mb-4">📋 Informations Générales</h3>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="info-label">🏢 Organisme</div>
+                        <div class="info-value">{{ tender.organization|default:"Non spécifié" }}</div>
+                        
+                        <div class="info-label">🌐 Site Source</div>
+                        <div class="info-value">
+                            <span class="badge bg-secondary">{{ tender.site.name }}</span>
+                        </div>
+                        
+                        <div class="info-label">🏷️ Catégorie</div>
+                        <div class="info-value">{{ tender.get_category_display|default:"Non spécifiée" }}</div>
+                        
+                        <div class="info-label">📅 Date de Publication</div>
+                        <div class="info-value">
+                            {% if tender.publication_date %}
+                                {{ tender.publication_date|date:"d/m/Y" }}
+                            {% else %}
+                                Non spécifiée
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="info-label">⏰ Date Limite</div>
+                        <div class="info-value">
+                            {% if tender.deadline_date %}
+                                {% if tender.days_remaining <= 3 %}
+                                    <span class="deadline-urgent">{{ tender.deadline_date|date:"d/m/Y à H:i" }}</span>
+                                    <br><small class="deadline-urgent">⚠️ {{ tender.days_remaining }} jour{{ tender.days_remaining|pluralize }} restant{{ tender.days_remaining|pluralize }}</small>
+                                {% elif tender.days_remaining <= 7 %}
+                                    <span class="deadline-soon">{{ tender.deadline_date|date:"d/m/Y à H:i" }}</span>
+                                    <br><small class="deadline-soon">⏳ {{ tender.days_remaining }} jour{{ tender.days_remaining|pluralize }} restant{{ tender.days_remaining|pluralize }}</small>
+                                {% else %}
+                                    <span class="deadline-normal">{{ tender.deadline_date|date:"d/m/Y à H:i" }}</span>
+                                    <br><small class="deadline-normal">✅ {{ tender.days_remaining }} jour{{ tender.days_remaining|pluralize }} restant{{ tender.days_remaining|pluralize }}</small>
+                                {% endif %}
+                            {% else %}
+                                Non spécifiée
+                            {% endif %}
+                        </div>
+                        
+                        <div class="info-label">💰 Valeur Estimée</div>
+                        <div class="info-value">
+                            {% if tender.estimated_value %}
+                                <strong>{{ tender.estimated_value|floatformat:0 }} {{ tender.currency }}</strong>
+                            {% else %}
+                                Non spécifiée
+                            {% endif %}
+                        </div>
+                        
+                        <div class="info-label">📊 Statut</div>
+                        <div class="info-value">
+                            <span class="status-badge status-{{ tender.status }}">
+                                {{ tender.get_status_display }}
+                            </span>
+                        </div>
+                        
+                        <div class="info-label">🕒 Extrait le</div>
+                        <div class="info-value">{{ tender.scraped_at|date:"d/m/Y à H:i" }}</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Description -->
+            {% if tender.description %}
+            <div class="info-card">
+                <h3 class="mb-4">📝 Description</h3>
+                <div class="text-justify">
+                    {{ tender.description|linebreaks }}
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Critères d'éligibilité -->
+            {% if tender.eligibility_criteria %}
+            <div class="info-card">
+                <h3 class="mb-4">✅ Critères d'Éligibilité</h3>
+                <div class="text-justify">
+                    {{ tender.eligibility_criteria|linebreaks }}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Sidebar -->
+        <div class="col-md-4">
+            <!-- Informations complémentaires -->
+            <div class="info-card">
+                <h4 class="mb-3">ℹ️ Informations Complémentaires</h4>
+                
+                {% if tender.location %}
+                <div class="info-label">📍 Lieu</div>
+                <div class="info-value">{{ tender.location }}</div>
+                {% endif %}
+                
+                {% if tender.contact_info %}
+                <div class="info-label">📞 Contact</div>
+                <div class="info-value">{{ tender.contact_info|linebreaks }}</div>
+                {% endif %}
+                
+                {% if tender.submission_method %}
+                <div class="info-label">📤 Mode de Soumission</div>
+                <div class="info-value">{{ tender.submission_method }}</div>
+                {% endif %}
+                
+                {% if tender.language %}
+                <div class="info-label">🌐 Langue</div>
+                <div class="info-value">{{ tender.language }}</div>
+                {% endif %}
+            </div>
+            
+            <!-- Documents associés -->
+            {% if tender.documents.exists %}
+            <div class="info-card">
+                <h4 class="mb-3">📎 Documents</h4>
+                {% for document in tender.documents.all %}
+                <div class="document-item">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>{{ document.title }}</strong>
+                            {% if document.file_type %}
+                                <span class="badge bg-info ms-2">{{ document.file_type|upper }}</span>
+                            {% endif %}
+                        </div>
+                        {% if document.file_url %}
+                            <a href="{{ document.file_url }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                📥 Télécharger
+                            </a>
+                        {% endif %}
+                    </div>
+                    {% if document.description %}
+                        <small class="text-muted d-block mt-2">{{ document.description }}</small>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            
+            <!-- Historique de scraping -->
+            <div class="info-card">
+                <h4 class="mb-3">🔄 Historique</h4>
+                <div class="info-label">Première extraction</div>
+                <div class="info-value">{{ tender.scraped_at|date:"d/m/Y à H:i" }}</div>
+                
+                {% if tender.updated_at != tender.scraped_at %}
+                <div class="info-label">Dernière mise à jour</div>
+                <div class="info-value">{{ tender.updated_at|date:"d/m/Y à H:i" }}</div>
+                {% endif %}
+                
+                <div class="info-label">Hash de contenu</div>
+                <div class="info-value">
+                    <code class="small">{{ tender.content_hash|truncatechars:16 }}</code>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Copier le hash de contenu au clic
+document.addEventListener('DOMContentLoaded', function() {
+    const hashElement = document.querySelector('code');
+    if (hashElement) {
+        hashElement.style.cursor = 'pointer';
+        hashElement.title = 'Cliquer pour copier le hash complet';
+        
+        hashElement.addEventListener('click', function() {
+            navigator.clipboard.writeText('{{ tender.content_hash }}').then(function() {
+                // Feedback visuel
+                const originalText = hashElement.textContent;
+                hashElement.textContent = 'Copié!';
+                hashElement.style.color = '#28a745';
+                
+                setTimeout(() => {
+                    hashElement.textContent = originalText;
+                    hashElement.style.color = '';
+                }, 2000);
+            });
+        });
+    }
+});
+</script>
+{% endblock %}

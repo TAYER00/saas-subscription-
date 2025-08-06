@@ -68,6 +68,7 @@ urlpatterns = [
     path('auth/', include('apps.auth.urls')),
     path('subscription/', include('apps.subscription.urls')),
     path('dashboard/', include('apps.dashboard.urls')),
+    path('tenders/', include('apps.tenders.urls')),
     path('', RedirectView.as_view(url='/dashboard/', permanent=False)),
 ]
 
