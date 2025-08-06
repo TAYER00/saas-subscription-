@@ -142,20 +142,88 @@
         background: #5a6fd8;
         transform: translateY(-2px);
     }
+    
+    /* Styles pour les restrictions des utilisateurs gratuits */
+    .content-masked {
+        position: relative;
+        filter: blur(3px);
+        pointer-events: none;
+        user-select: none;
+    }
+    
+    .content-masked::after {
+        content: "🔒";
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 1.2rem;
+        color: #dc2626;
+        background: rgba(255, 255, 255, 0.9);
+        padding: 0.2rem 0.5rem;
+        border-radius: 4px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        filter: none;
+    }
+    
+    .action-disabled {
+        opacity: 0.5;
+        pointer-events: none;
+        cursor: not-allowed;
+    }
+    
+    .upgrade-banner {
+        background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+        color: white;
+        padding: 1rem;
+        border-radius: 8px;
+        margin-bottom: 1rem;
+        text-align: center;
+        box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);
+    }
+    
+    .upgrade-btn {
+        background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 6px;
+        text-decoration: none;
+        font-weight: 600;
+        display: inline-block;
+        margin-top: 0.5rem;
+        transition: all 0.3s ease;
+    }
+    
+    .upgrade-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(220, 38, 38, 0.4);
+        color: white;
+    }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="container-fluid px-4" style="width: 100%; max-width: 100%;">
+    <!-- Bannière d'upgrade pour les utilisateurs gratuits -->
+    {% if not is_premium %}
+    <div class="upgrade-banner">
+        <h5 class="mb-2"><i class="fas fa-crown me-2"></i>Accès Limité - Plan Gratuit</h5>
+        <p class="mb-2">Passez au plan Premium pour accéder à tous les détails des appels d'offres !</p>
+        <a href="{% url 'subscription:plans' %}" class="upgrade-btn">
+            <i class="fas fa-rocket me-2"></i>Passer au Premium
+        </a>
+    </div>
+    {% endif %}
+    
     <!-- En-tête -->
     <div class="tender-header text-center">
-        <h1 class="mb-3">📄 {{ tender.title }}</h1>
+        <h1 class="mb-3">📄 <span class="{% if not is_premium %}content-masked{% endif %}">{{ tender.title }}</span></h1>
         <div class="d-flex justify-content-center align-items-center gap-3">
-            <span class="status-badge status-{{ tender.status }}">
+            <span class="status-badge status-{{ tender.status }} {% if not is_premium %}content-masked{% endif %}">
                 {{ tender.get_status_display }}
             </span>
             {% if tender.reference %}
-                <span class="badge bg-light text-dark">Réf: {{ tender.reference }}</span>
+                <span class="badge bg-light text-dark {% if not is_premium %}content-masked{% endif %}">Réf: {{ tender.reference }}</span>
             {% endif %}
         </div>
     </div>
@@ -166,7 +234,7 @@
             ← Retour au tableau de bord
         </a>
         {% if tender.source_url %}
-            <a href="{{ tender.source_url }}" target="_blank" class="btn btn-source">
+            <a href="{{ tender.source_url }}" target="_blank" class="btn btn-source {% if not is_premium %}action-disabled{% endif %}">
                 🔗 Voir sur le site source
             </a>
         {% endif %}
@@ -181,18 +249,18 @@
                 <div class="row g-4">
                     <div class="col-lg-3 col-md-6">
                         <div class="info-label">🏢 Organisme</div>
-                        <div class="info-value">{{ tender.organization|default:"Non spécifié" }}</div>
+                        <div class="info-value {% if not is_premium %}content-masked{% endif %}">{{ tender.organization|default:"Non spécifié" }}</div>
                         
                         <div class="info-label">🌐 Site Source</div>
-                        <div class="info-value">
+                        <div class="info-value {% if not is_premium %}content-masked{% endif %}">
                             <span class="badge bg-secondary">{{ tender.site.name }}</span>
                         </div>
                         
                         <div class="info-label">🏷️ Catégorie</div>
-                        <div class="info-value">{{ tender.get_category_display|default:"Non spécifiée" }}</div>
+                        <div class="info-value {% if not is_premium %}content-masked{% endif %}">{{ tender.get_category_display|default:"Non spécifiée" }}</div>
                         
                         <div class="info-label">📅 Date de Publication</div>
-                        <div class="info-value">
+                        <div class="info-value {% if not is_premium %}content-masked{% endif %}">
                             {% if tender.publication_date %}
                                 {{ tender.publication_date|date:"d/m/Y" }}
                             {% else %}
@@ -203,7 +271,7 @@
                     
                     <div class="col-lg-3 col-md-6">
                         <div class="info-label">⏰ Date Limite</div>
-                        <div class="info-value">
+                        <div class="info-value {% if not is_premium %}content-masked{% endif %}">
                             {% if tender.deadline_date %}
                                 {% if tender.days_remaining <= 3 %}
                                     <span class="deadline-urgent">{{ tender.deadline_date|date:"d/m/Y à H:i" }}</span>
@@ -221,7 +289,7 @@
                         </div>
                         
                         <div class="info-label">💰 Valeur Estimée</div>
-                        <div class="info-value">
+                        <div class="info-value {% if not is_premium %}content-masked{% endif %}">
                             {% if tender.estimated_value %}
                                 <strong>{{ tender.estimated_value|floatformat:0 }} {{ tender.currency }}</strong>
                             {% else %}
@@ -248,7 +316,7 @@
             {% if tender.description %}
             <div class="info-card">
                 <h3 class="mb-4">📝 Description</h3>
-                <div class="text-justify">
+                <div class="text-justify {% if not is_premium %}content-masked{% endif %}">
                     {{ tender.description|linebreaks }}
                 </div>
             </div>
@@ -258,7 +326,7 @@
             {% if tender.eligibility_criteria %}
             <div class="info-card">
                 <h3 class="mb-4">✅ Critères d'Éligibilité</h3>
-                <div class="text-justify">
+                <div class="text-justify {% if not is_premium %}content-masked{% endif %}">
                     {{ tender.eligibility_criteria|linebreaks }}
                 </div>
             </div>
@@ -273,22 +341,22 @@
                 
                 {% if tender.location %}
                 <div class="info-label">📍 Lieu</div>
-                <div class="info-value">{{ tender.location }}</div>
+                <div class="info-value {% if not is_premium %}content-masked{% endif %}">{{ tender.location }}</div>
                 {% endif %}
                 
                 {% if tender.contact_info %}
                 <div class="info-label">📞 Contact</div>
-                <div class="info-value">{{ tender.contact_info|linebreaks }}</div>
+                <div class="info-value {% if not is_premium %}content-masked{% endif %}">{{ tender.contact_info|linebreaks }}</div>
                 {% endif %}
                 
                 {% if tender.submission_method %}
                 <div class="info-label">📤 Mode de Soumission</div>
-                <div class="info-value">{{ tender.submission_method }}</div>
+                <div class="info-value {% if not is_premium %}content-masked{% endif %}">{{ tender.submission_method }}</div>
                 {% endif %}
                 
                 {% if tender.language %}
                 <div class="info-label">🌐 Langue</div>
-                <div class="info-value">{{ tender.language }}</div>
+                <div class="info-value {% if not is_premium %}content-masked{% endif %}">{{ tender.language }}</div>
                 {% endif %}
             </div>
             
@@ -297,7 +365,7 @@
             <div class="info-card">
                 <h4 class="mb-3">📎 Documents</h4>
                 {% for document in tender.documents.all %}
-                <div class="document-item">
+                <div class="document-item {% if not is_premium %}content-masked{% endif %}">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
                             <strong>{{ document.title }}</strong>
@@ -306,7 +374,7 @@
                             {% endif %}
                         </div>
                         {% if document.file_url %}
-                            <a href="{{ document.file_url }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                            <a href="{{ document.file_url }}" target="_blank" class="btn btn-sm btn-outline-primary {% if not is_premium %}action-disabled{% endif %}">
                                 📥 Télécharger
                             </a>
                         {% endif %}

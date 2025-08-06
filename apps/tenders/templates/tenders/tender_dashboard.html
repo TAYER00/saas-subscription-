@@ -186,13 +186,92 @@
     }
     
     /* Largeurs par défaut des colonnes */
-    .table thead th:nth-child(1) { width: 30%; }
-    .table thead th:nth-child(2) { width: 15%; }
-    .table thead th:nth-child(3) { width: 12%; }
-    .table thead th:nth-child(4) { width: 10%; }
-    .table thead th:nth-child(5) { width: 15%; }
-    .table thead th:nth-child(6) { width: 10%; }
-    .table thead th:nth-child(7) { width: 8%; }
+     .table thead th:nth-child(1) { width: 30%; }
+     .table thead th:nth-child(2) { width: 15%; }
+     .table thead th:nth-child(3) { width: 12%; }
+     .table thead th:nth-child(4) { width: 10%; }
+     .table thead th:nth-child(5) { width: 15%; }
+     .table thead th:nth-child(6) { width: 10%; }
+     .table thead th:nth-child(7) { width: 8%; }
+     
+     /* Styles pour les restrictions des utilisateurs gratuits */
+     .content-masked {
+         position: relative;
+         filter: blur(3px);
+         pointer-events: none;
+         user-select: none;
+     }
+     
+     .content-masked::after {
+         content: "🔒";
+         position: absolute;
+         top: 50%;
+         left: 50%;
+         transform: translate(-50%, -50%);
+         font-size: 1.2rem;
+         color: #dc2626;
+         background: rgba(255, 255, 255, 0.9);
+         padding: 0.2rem 0.5rem;
+         border-radius: 4px;
+         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+         filter: none;
+     }
+     
+     .action-disabled {
+         opacity: 0.5;
+         pointer-events: none;
+         cursor: not-allowed;
+     }
+     
+     .premium-overlay {
+         position: relative;
+     }
+     
+     .premium-overlay::before {
+         content: "Premium requis";
+         position: absolute;
+         top: 0;
+         left: 0;
+         right: 0;
+         bottom: 0;
+         background: rgba(0, 0, 0, 0.7);
+         color: white;
+         display: flex;
+         align-items: center;
+         justify-content: center;
+         font-size: 0.8rem;
+         font-weight: 600;
+         z-index: 5;
+         border-radius: 4px;
+     }
+     
+     .upgrade-banner {
+         background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+         color: white;
+         padding: 1rem;
+         border-radius: 8px;
+         margin-bottom: 1rem;
+         text-align: center;
+         box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);
+     }
+     
+     .upgrade-btn {
+         background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+         color: white;
+         padding: 0.5rem 1rem;
+         border-radius: 6px;
+         text-decoration: none;
+         font-weight: 600;
+         display: inline-block;
+         margin-top: 0.5rem;
+         transition: all 0.3s ease;
+     }
+     
+     .upgrade-btn:hover {
+         transform: translateY(-2px);
+         box-shadow: 0 4px 15px rgba(220, 38, 38, 0.4);
+         color: white;
+     }
     
     .table-header {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -519,11 +598,23 @@
         </div>
     </div>
 
+    <!-- Bannière d'upgrade pour les utilisateurs gratuits -->
+    {% if not is_premium %}
+    <div class="upgrade-banner">
+        <h5 class="mb-2"><i class="fas fa-crown me-2"></i>Accès Limité - Plan Gratuit</h5>
+        <p class="mb-2">Passez au plan Premium pour accéder à toutes les informations des appels d'offres et débloquer toutes les fonctionnalités !</p>
+        <a href="{% url 'subscription:plans' %}" class="upgrade-btn">
+            <i class="fas fa-rocket me-2"></i>Passer au Premium
+        </a>
+    </div>
+    {% endif %}
+    
     <!-- Filtres -->
-    <div class="filters-section">
+    <div class="filters-section {% if not is_premium %}premium-overlay{% endif %}">
         <div class="filter-card">
             <div class="filter-header">
                 <i class="fas fa-filter me-2"></i>Filtres de Recherche
+                {% if not is_premium %}<span class="float-end"><i class="fas fa-lock"></i></span>{% endif %}
             </div>
             <form method="get">
                 <div class="row g-4">
@@ -533,13 +624,14 @@
                         </label>
                         <input type="text" class="form-control" id="search" name="search" 
                                value="{{ current_filters.search }}" 
-                               placeholder="Titre, organisation, référence...">
+                               placeholder="Titre, organisation, référence..."
+                               {% if not is_premium %}disabled{% endif %}>
                     </div>
                     <div class="col-lg-2 col-md-6">
                         <label for="status" class="form-label fw-semibold">
                             <i class="fas fa-flag me-2 text-success"></i>Statut
                         </label>
-                        <select class="form-select" id="status" name="status">
+                        <select class="form-select" id="status" name="status" {% if not is_premium %}disabled{% endif %}>
                             <option value="">Tous les statuts</option>
                             {% for value, label in status_choices %}
                                 <option value="{{ value }}" {% if current_filters.status == value %}selected{% endif %}>
@@ -552,7 +644,7 @@
                         <label for="site" class="form-label fw-semibold">
                             <i class="fas fa-globe me-2 text-info"></i>Site Source
                         </label>
-                        <select class="form-select" id="site" name="site">
+                        <select class="form-select" id="site" name="site" {% if not is_premium %}disabled{% endif %}>
                             <option value="">Tous les sites</option>
                             {% for site in sites %}
                                 <option value="{{ site.id }}" {% if current_filters.site == site.id|stringformat:'s' %}selected{% endif %}>
@@ -565,7 +657,7 @@
                         <label for="category" class="form-label fw-semibold">
                             <i class="fas fa-tags me-2 text-warning"></i>Catégorie
                         </label>
-                        <select class="form-select" id="category" name="category">
+                        <select class="form-select" id="category" name="category" {% if not is_premium %}disabled{% endif %}>
                             <option value="">Toutes les catégories</option>
                             {% for value, label in category_choices %}
                                 <option value="{{ value }}" {% if current_filters.category == value %}selected{% endif %}>
@@ -578,7 +670,7 @@
                         <label for="sort" class="form-label fw-semibold">
                             <i class="fas fa-sort me-2 text-secondary"></i>Tri
                         </label>
-                        <select class="form-select" id="sort" name="sort">
+                        <select class="form-select" id="sort" name="sort" {% if not is_premium %}disabled{% endif %}>
                             <option value="-scraped_at" {% if current_filters.sort == '-scraped_at' %}selected{% endif %}>Plus récents</option>
                             <option value="scraped_at" {% if current_filters.sort == 'scraped_at' %}selected{% endif %}>Plus anciens</option>
                             <option value="deadline" {% if current_filters.sort == 'deadline' %}selected{% endif %}>Échéance proche</option>
@@ -589,10 +681,10 @@
                     </div>
                 </div>
                 <div class="d-flex justify-content-end gap-3 mt-3">
-                    <a href="{% url 'tenders:dashboard' %}" class="btn btn-reset">
+                    <a href="{% url 'tenders:dashboard' %}" class="btn btn-reset {% if not is_premium %}action-disabled{% endif %}">
                         <i class="fas fa-undo me-2"></i>Réinitialiser
                     </a>
-                    <button type="submit" class="btn btn-filter">
+                    <button type="submit" class="btn btn-filter {% if not is_premium %}action-disabled{% endif %}">
                         <i class="fas fa-search me-2"></i>Rechercher
                     </button>
                 </div>
@@ -612,13 +704,15 @@
             <table class="table mb-0">
                 <thead>
                     <tr>
-                        <th><i class="fas fa-file-alt me-2"></i>Titre & Organisation<div class="resize-handle"></div></th>
+                        <th style="{% if is_premium %}width: 30%;{% else %}width: 100%;{% endif %}"><i class="fas fa-file-alt me-2"></i>Titre & Organisation<div class="resize-handle"></div></th>
+                        {% if is_premium %}
                         <th><i class="fas fa-hashtag me-2"></i>Référence<div class="resize-handle"></div></th>
                         <th><i class="fas fa-tags me-2"></i>Catégorie<div class="resize-handle"></div></th>
                         <th><i class="fas fa-flag me-2"></i>Statut<div class="resize-handle"></div></th>
                         <th><i class="fas fa-calendar-alt me-2"></i>Échéance<div class="resize-handle"></div></th>
                         <th><i class="fas fa-globe me-2"></i>Source<div class="resize-handle"></div></th>
                         <th><i class="fas fa-cog me-2"></i>Actions<div class="resize-handle"></div></th>
+                        {% endif %}
                     </tr>
                 </thead>
                 <tbody>
@@ -633,6 +727,7 @@
                                 </small>
                             {% endif %}
                         </td>
+                        {% if is_premium %}
                         <td>
                             <span class="tender-reference">{{ tender.reference|default:"N/A" }}</span>
                         </td>
@@ -678,6 +773,16 @@
                                 </a>
                             {% endif %}
                         </td>
+                        {% else %}
+                        <td class="content-masked">***</td>
+                        <td class="content-masked">***</td>
+                        <td class="content-masked">***</td>
+                        <td class="content-masked">***</td>
+                        <td class="content-masked">***</td>
+                        <td class="action-disabled">
+                            <span class="action-btn" style="opacity: 0.3; cursor: not-allowed;"><i class="fas fa-lock"></i> Premium</span>
+                        </td>
+                        {% endif %}
                     </tr>
                     {% empty %}
                     <tr>

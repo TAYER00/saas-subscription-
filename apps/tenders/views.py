@@ -6,6 +6,8 @@ from django.http import JsonResponse
 from django.utils import timezone
 from .models import Tender, TenderSite, ScrapingLog
 from datetime import datetime, timedelta
+from .permissions import get_user_subscription_info, TenderViewPermissions
+from apps.subscription.models import Subscription
 
 
 @login_required
@@ -61,6 +63,16 @@ def tender_dashboard(request):
     status_choices = Tender.STATUS_CHOICES
     category_choices = Tender.CATEGORY_CHOICES
     
+    # Informations d'abonnement de l'utilisateur
+    user_subscription, is_premium = get_user_subscription_info(request.user)
+    
+    # Permissions d'affichage
+    view_permissions = {
+        'can_view_full_details': TenderViewPermissions.can_view_full_details(request.user),
+        'can_use_advanced_filters': TenderViewPermissions.can_use_advanced_filters(request.user),
+        'masked_fields': TenderViewPermissions.get_masked_fields_for_user(request.user)
+    }
+    
     context = {
         'page_obj': page_obj,
         'stats': stats,
@@ -73,7 +85,10 @@ def tender_dashboard(request):
             'site': site_filter,
             'category': category_filter,
             'sort': sort_by,
-        }
+        },
+        'user_subscription': user_subscription,
+        'is_premium': is_premium,
+        'view_permissions': view_permissions,
     }
     
     return render(request, 'tenders/tender_dashboard.html', context)
@@ -87,9 +102,23 @@ def tender_detail(request, tender_id):
     tender = get_object_or_404(Tender, id=tender_id)
     documents = tender.documents.all()
     
+    # Informations d'abonnement de l'utilisateur
+    user_subscription, is_premium = get_user_subscription_info(request.user)
+    
+    # Permissions d'affichage
+    view_permissions = {
+        'can_view_full_details': TenderViewPermissions.can_view_full_details(request.user),
+        'can_download_documents': TenderViewPermissions.can_download_documents(request.user),
+        'can_access_source_url': TenderViewPermissions.can_access_source_url(request.user),
+        'masked_fields': TenderViewPermissions.get_masked_fields_for_user(request.user)
+    }
+    
     context = {
         'tender': tender,
         'documents': documents,
+        'user_subscription': user_subscription,
+        'is_premium': is_premium,
+        'view_permissions': view_permissions,
     }
     
     return render(request, 'tenders/tender_detail.html', context)
