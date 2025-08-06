@@ -435,22 +435,36 @@ def migrate_user_to_paid(request, user_id):
                 status='active'
             ).first()
             
+            # Vérifier si l'utilisateur a déjà un abonnement avec le nouveau plan (même inactif)
+            existing_subscription_with_plan = Subscription.objects.filter(
+                user=user,
+                plan=new_plan
+            ).first()
+            
             old_plan = None
             if current_subscription:
-                # Annuler l'ancien abonnement
                 old_plan = current_subscription.plan
+                # Annuler l'ancien abonnement
                 current_subscription.status = 'cancelled'
                 current_subscription.save()
             
-            # Créer le nouvel abonnement
-            new_subscription = Subscription.objects.create(
-                user=user,
-                plan=new_plan,
-                status='active',
-                start_date=timezone.now(),
-                amount_paid=new_plan.price,
-                payment_method='Migration administrative'
-            )
+            # Si l'utilisateur a déjà un abonnement avec ce plan, le réactiver
+            if existing_subscription_with_plan:
+                new_subscription = existing_subscription_with_plan
+                new_subscription.status = 'active'
+                new_subscription.start_date = timezone.now()
+                new_subscription.amount_paid = new_plan.price
+                new_subscription.payment_method = 'Migration administrative'
+            else:
+                # Créer un nouvel abonnement seulement s'il n'existe pas déjà
+                new_subscription = Subscription.objects.create(
+                    user=user,
+                    plan=new_plan,
+                    status='active',
+                    start_date=timezone.now(),
+                    amount_paid=new_plan.price,
+                    payment_method='Migration administrative'
+                )
             
             # Calculer la date de fin selon le cycle de facturation
             if new_plan.billing_cycle == 'monthly':
